@@ -115,6 +115,13 @@ class PythonCalculatorApp:
         # Code editor (top panel)
         editor_container = ctk.CTkFrame(self.splitter)
         self.editor = PythonEditor(editor_container)
+        # Устанавливаем callbacks для горячих клавиш
+        self.editor.set_run_code_callback(self.handle_run_code)
+        self.editor.set_file_action_callbacks(
+            create_callback=self.handle_create_file,
+            save_callback=self.handle_save_file,
+            delete_callback=self.handle_delete_file
+        )
         self.splitter.add(editor_container, minsize=200)
 
         # Text output results area (bottom panel)
@@ -141,6 +148,10 @@ class PythonCalculatorApp:
 
         # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
+        
+        # Обработчик Del для удаления файла (на уровне root окна)
+        self.root.bind('<Delete>', self._on_delete_key)
+        self.root.bind('<KP_Delete>', self._on_delete_key)  # Delete на цифровой клавиатуре
 
         # Plots panel (right side) - hidden by default
         self.plots_panel = ctk.CTkFrame(main_container)
@@ -205,6 +216,24 @@ class PythonCalculatorApp:
         # Additional logic can be added here if needed
         # DO NOT call anything that might close the application
         pass
+    
+    def _on_delete_key(self, event):
+        """Обработка нажатия Del для удаления файла."""
+        # Проверяем, есть ли выделенный текст в редакторе
+        # Если есть - позволяем редактору обработать удаление текста
+        try:
+            text_widget = self.editor.text_widget
+            if text_widget.tag_ranges("sel"):
+                # Есть выделенный текст - не обрабатываем, позволяем редактору удалить текст
+                return None
+        except:
+            pass
+        
+        # Если нет выделенного текста и есть открытый файл - удаляем файл
+        if self.current_file:
+            self.handle_delete_file()
+        
+        return None
     
     def handle_create_file(self):
         """Handle creating a new file."""

@@ -93,6 +93,13 @@ class PythonEditor:
         # Настройка контекстного меню (как в окне вывода)
         self._setup_context_menu()
         
+        # Callback для выполнения кода (устанавливается извне)
+        self.run_code_callback = None
+        # Callbacks для действий с файлами (устанавливаются извне)
+        self.create_file_callback = None
+        self.save_file_callback = None
+        self.delete_file_callback = None
+        
         # Привязка событий для автодополнения
         # События для навигации будут привязываться динамически при открытии автодополнения
         # Также привязываем общий KeyPress для закрытия подсказок и других обработок
@@ -100,6 +107,7 @@ class PythonEditor:
         self.text_widget.bind("<KeyRelease>", self._on_key_release)
         self.text_widget.bind("<Tab>", self._on_tab, add="+")
         self.text_widget.bind("<Escape>", self._close_autocomplete, add="+")
+        self.text_widget.bind("<F5>", self._on_f5)
         
         # ID привязок для навигации (для последующего отвязывания)
         self._nav_bind_ids = []
@@ -119,6 +127,11 @@ class PythonEditor:
         self.text_widget.bind("<Control-X>", self._cut_text, add="+")
         self.text_widget.bind("<Control-a>", self._select_all, add="+")
         self.text_widget.bind("<Control-A>", self._select_all, add="+")
+        # Горячие клавиши для работы с файлами
+        self.text_widget.bind("<Control-n>", self._on_ctrl_n, add="+")
+        self.text_widget.bind("<Control-N>", self._on_ctrl_n, add="+")
+        self.text_widget.bind("<Control-s>", self._on_ctrl_s, add="+")
+        self.text_widget.bind("<Control-S>", self._on_ctrl_s, add="+")
         
         # Отслеживаем изменения текста для обновления подсветки после вставки
         self.text_widget.bind("<<Modified>>", self._on_text_modified)
@@ -360,6 +373,24 @@ class PythonEditor:
         
         # Все остальные клавиши обрабатываются редактором как обычно
         return None
+    
+    def _on_f5(self, event):
+        """Обработка нажатия F5 для выполнения кода."""
+        if self.run_code_callback:
+            self.run_code_callback()
+        return "break"
+    
+    def _on_ctrl_n(self, event):
+        """Обработка нажатия Ctrl+N для создания нового файла."""
+        if self.create_file_callback:
+            self.create_file_callback()
+        return "break"
+    
+    def _on_ctrl_s(self, event):
+        """Обработка нажатия Ctrl+S для сохранения файла."""
+        if self.save_file_callback:
+            self.save_file_callback()
+        return "break"
     
     def _on_tab(self, event):
         """Обработка Tab для автодополнения."""
@@ -793,6 +824,31 @@ class PythonEditor:
         """Очистка редактора."""
         self.text_widget.delete("1.0", "end")
         self._update_syntax_highlighting()
+    
+    def set_run_code_callback(self, callback):
+        """
+        Установка callback для выполнения кода при нажатии F5.
+        
+        Args:
+            callback: Функция без параметров, которая будет вызвана при нажатии F5
+        """
+        self.run_code_callback = callback
+    
+    def set_file_action_callbacks(self, create_callback=None, save_callback=None, delete_callback=None):
+        """
+        Установка callbacks для действий с файлами.
+        
+        Args:
+            create_callback: Функция без параметров для создания нового файла (Ctrl+N)
+            save_callback: Функция без параметров для сохранения файла (Ctrl+S)
+            delete_callback: Функция без параметров для удаления файла (Del)
+        """
+        if create_callback:
+            self.create_file_callback = create_callback
+        if save_callback:
+            self.save_file_callback = save_callback
+        if delete_callback:
+            self.delete_file_callback = delete_callback
 
     def _on_mouse_motion(self, event):
         """Обработка движения мыши для показа всплывающих подсказок."""
