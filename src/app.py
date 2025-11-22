@@ -17,6 +17,8 @@ from components.output_interface import IOutputDisplay
 from components.plots_display import PlotsDisplay
 from components.toolbar import Toolbar
 from components.file_panel import FilePanel
+from components.hotkeys_help_dialog import HotkeysHelpDialog
+from components.notification import Notification
 from utils.data_manager import DataManager
 from utils.code_executor import CodeExecutor
 from utils.hotkey_manager import HotkeyManager
@@ -63,7 +65,8 @@ class PythonCalculatorApp:
             on_save=self.handle_save_file,
             on_run=self.handle_run_code,
             on_select_directory=self.handle_select_directory,
-            on_delete=self.handle_delete_file
+            on_delete=self.handle_delete_file,
+            on_help=self.show_hotkeys_help
         )
         # Save and delete buttons are disabled by default
         self.toolbar.set_save_enabled(False)
@@ -164,6 +167,14 @@ class PythonCalculatorApp:
             component='PythonCalculatorApp',
             description='Удалить файл (Delete на цифровой клавиатуре)'
         )
+        
+        # F1 для справки по горячим клавишам
+        self.hotkey_manager.register(
+            '<F1>',
+            lambda e: self.show_hotkeys_help(),
+            component='PythonCalculatorApp',
+            description='Показать справку по горячим клавишам'
+        )
 
         # Plots panel (right side) - hidden by default
         self.plots_panel = ctk.CTkFrame(main_container)
@@ -245,6 +256,7 @@ class PythonCalculatorApp:
             # Если нет выделенного текста и есть открытый файл - удаляем файл
             if self.current_file:
                 self.handle_delete_file()
+                Notification.show(self.root, "Файл удален")
         except Exception as e:
             print(f"Ошибка обработки Delete для удаления файла: {e}")
         
@@ -587,5 +599,14 @@ class PythonCalculatorApp:
             self.splitter.configure(bg=bg_color)
         except Exception as e:
             print(f"Error updating splitter color: {e}")
+    
+    def show_hotkeys_help(self):
+        """Показать диалог справки по горячим клавишам."""
+        try:
+            HotkeysHelpDialog(self.root, self.hotkey_manager)
+        except Exception as e:
+            print(f"Ошибка показа справки по горячим клавишам: {e}")
+            import traceback
+            traceback.print_exc()
 
 

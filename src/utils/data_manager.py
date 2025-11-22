@@ -243,7 +243,8 @@ class DataManager:
                 "current_directory": get_data_directory(),
                 "last_file": None,
                 "window_size": {"width": 1400, "height": 700},
-                "splitter_position": 0.5
+                "splitter_position": 0.5,
+                "hotkeys": {}
             }
         
         try:
@@ -260,6 +261,10 @@ class DataManager:
                 if "window_size" not in state:
                     state["window_size"] = {"width": 1400, "height": 700}
                 
+                # Make sure hotkeys is in state
+                if "hotkeys" not in state:
+                    state["hotkeys"] = {}
+                
                 return state
         except Exception as e:
             print(f"Error loading application state: {e}")
@@ -267,7 +272,8 @@ class DataManager:
                 "current_directory": get_data_directory(),
                 "last_file": None,
                 "window_size": {"width": 1400, "height": 700},
-                "splitter_position": 0.5
+                "splitter_position": 0.5,
+                "hotkeys": {}
             }
     
     def save_app_state(self, current_directory: Optional[str] = None, last_file: Optional[str] = None, window_size: Optional[Tuple[int, int]] = None) -> bool:
@@ -388,4 +394,36 @@ class DataManager:
                 print(f"Error converting file {filename}: {e}")
 
         return converted_count
+    
+    def save_hotkeys_config(self, hotkeys: Dict[str, str]) -> bool:
+        """
+        Сохранить конфигурацию горячих клавиш.
+        
+        Args:
+            hotkeys: Словарь с настройками горячих клавиш (например, {"run_code": "F5"})
+        
+        Returns:
+            True если сохранение успешно, False иначе
+        """
+        try:
+            state_file = get_app_state_file()
+            current_state = self.load_app_state()
+            current_state["hotkeys"] = hotkeys
+            
+            with open(state_file, "w", encoding="utf-8") as f:
+                json.dump(current_state, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception as e:
+            print(f"Ошибка сохранения конфигурации горячих клавиш: {e}")
+            return False
+    
+    def load_hotkeys_config(self) -> Dict[str, str]:
+        """
+        Загрузить конфигурацию горячих клавиш.
+        
+        Returns:
+            Словарь с настройками горячих клавиш
+        """
+        state = self.load_app_state()
+        return state.get("hotkeys", {})
 

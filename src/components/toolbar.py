@@ -12,7 +12,8 @@ class Toolbar:
                  on_save: Optional[Callable] = None,
                  on_run: Optional[Callable] = None,
                  on_select_directory: Optional[Callable] = None,
-                 on_delete: Optional[Callable] = None):
+                 on_delete: Optional[Callable] = None,
+                 on_help: Optional[Callable] = None):
         """
         Initialize toolbar.
 
@@ -32,6 +33,7 @@ class Toolbar:
         self.on_run = on_run
         self.on_select_directory = on_select_directory
         self.on_delete = on_delete
+        self.on_help = on_help
 
         # Button colors - gray theme that adapts to appearance mode
         # Format: (light_theme_color, dark_theme_color)
@@ -105,6 +107,19 @@ class Toolbar:
         )
         self.run_btn.pack(side="left", padx=2)
 
+        # "Help" button for hotkeys
+        self.help_btn = ctk.CTkButton(
+            self.frame,
+            text="❓",  # Help icon
+            command=self._handle_help,
+            width=40,
+            height=35,
+            font=ctk.CTkFont(size=14),
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
+        )
+        self.help_btn.pack(side="right", padx=2)
+
         # Add tooltips for buttons
         self._add_tooltips()
 
@@ -131,6 +146,9 @@ class Toolbar:
 
             self.run_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Run code"))
             self.run_btn.bind("<Leave>", self._hide_tooltip)
+
+            self.help_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Горячие клавиши (F1)"))
+            self.help_btn.bind("<Leave>", self._hide_tooltip)
 
         except ImportError:
             # If ttk is not available, just skip tooltips
@@ -221,6 +239,11 @@ class Toolbar:
         """Handle code run button."""
         if self.on_run:
             self.on_run()
+    
+    def _handle_help(self):
+        """Handle help button."""
+        if self.on_help:
+            self.on_help()
     
     @staticmethod
     def save_file_dialog() -> Optional[str]:

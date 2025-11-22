@@ -15,6 +15,7 @@ import re
 from typing import Optional, List, Tuple
 from utils.keyboard_utils import copy_to_clipboard, get_selected_text, get_clipboard_text, bind_case_insensitive
 from utils.bindtag_context import BindTagContext
+from components.notification import Notification
 
 try:
     from idlelib.colorizer import ColorDelegator
@@ -391,6 +392,7 @@ class PythonEditor:
         try:
             if self.run_code_callback:
                 self.run_code_callback()
+                Notification.show(self.text_widget, "Код выполнен")
             return "break"
         except Exception as e:
             print(f"Ошибка выполнения кода (F5): {e}")
@@ -401,6 +403,7 @@ class PythonEditor:
         try:
             if self.create_file_callback:
                 self.create_file_callback()
+                Notification.show(self.text_widget, "Создание нового файла...")
             return "break"
         except Exception as e:
             print(f"Ошибка создания файла (Ctrl+N): {e}")
@@ -411,6 +414,7 @@ class PythonEditor:
         try:
             if self.save_file_callback:
                 self.save_file_callback()
+                Notification.show(self.text_widget, "Файл сохранен")
             return "break"
         except Exception as e:
             print(f"Ошибка сохранения файла (Ctrl+S): {e}")
