@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Демонстрация использования MarkdownOutputDisplay в приложении Python Calculator.
+Demonstration of using MarkdownOutputDisplay in Python Calculator application.
 
-Для использования новой реализации замените строку в app.py:
+To use the new implementation, replace the line in app.py:
     self.output: IOutputDisplay = OutputDisplay(output_container)
 
-на:
+with:
     from components.output_markdown import MarkdownOutputDisplay
     self.output: IOutputDisplay = MarkdownOutputDisplay(output_container)
 """
@@ -14,130 +14,130 @@ import customtkinter as ctk
 from components.output_markdown import MarkdownOutputDisplay
 
 def demo_markdown_output():
-    """Демонстрация MarkdownOutputDisplay."""
-    # Создаем главное окно
+    """Demonstrate MarkdownOutputDisplay."""
+    # Create main window
     root = ctk.CTk()
-    root.title("Демо MarkdownOutputDisplay")
+    root.title("MarkdownOutputDisplay Demo")
     root.geometry("900x700")
 
-    # Создаем экземпляр MarkdownOutputDisplay
+    # Create MarkdownOutputDisplay instance
     output_display = MarkdownOutputDisplay(root)
 
-    # Добавляем различные типы контента для демонстрации
+    # Add various types of content for demonstration
 
-    # 1. Заголовок
-    output_display.append_text("# Демонстрация MarkdownOutputDisplay\n\n", "success")
+    # 1. Header
+    output_display.append_text("# MarkdownOutputDisplay Demonstration\n\n", "success")
 
-    # 2. Описание
+    # 2. Description
     description = """
-## Возможности
+## Features
 
-Эта реализация OutputDisplay использует библиотеку **tkhtmlview** для полноценного
-отображения markdown контента с:
+This OutputDisplay implementation uses the **tkhtmlview** library for full
+markdown content display with:
 
-- Полной поддержкой HTML форматирования
-- Подсветкой синтаксиса для блоков кода
-- Таблицами и списками
-- Ссылками и изображениями
-- Адаптивными темами (светлая/темная)
+- Full HTML formatting support
+- Syntax highlighting for code blocks
+- Tables and lists
+- Links and images
+- Adaptive themes (light/dark)
 """
 
     output_display.append_markdown(description)
 
-    # 3. Примеры кода
-    output_display.append_text("\n## Примеры кода\n", "success")
+    # 3. Code examples
+    output_display.append_text("\n## Code Examples\n", "success")
 
     code_examples = """
-### Python код с подсветкой
+### Python code with highlighting
 
 ```python
 def fibonacci(n):
-    \"\"\"Вычисление числа Фибоначчи.\"\"\"
+    \"\"\"Calculate Fibonacci number.\"\"\"
     if n <= 1:
         return n
     return fibonacci(n-1) + fibonacci(n-2)
 
-# Пример использования
+# Usage example
 for i in range(10):
     print(f"F({i}) = {fibonacci(i)}")
 ```
 
-### Математические выражения
+### Mathematical expressions
 
 ```python
 import math
 
-# Вычисление площади круга
+# Calculate circle area
 def circle_area(radius):
     return math.pi * radius ** 2
 
 radius = 5
 area = circle_area(radius)
-print(f"Площадь круга с радиусом {radius} = {area:.2f}")
+print(f"Circle area with radius {radius} = {area:.2f}")
 ```
 """
 
     output_display.append_markdown(code_examples)
 
-    # 4. Таблицы
-    output_display.append_text("\n## Таблицы\n", "success")
+    # 4. Tables
+    output_display.append_text("\n## Tables\n", "success")
 
     table_md = """
-| Функция | Описание | Пример |
-|---------|----------|---------|
-| `print()` | Вывод текста | `print("Hello")` |
-| `len()` | Длина объекта | `len([1,2,3])` |
-| `range()` | Диапазон чисел | `range(5)` |
-| `sum()` | Сумма элементов | `sum([1,2,3])` |
+| Function | Description | Example |
+|----------|-------------|---------|
+| `print()` | Print text | `print("Hello")` |
+| `len()` | Object length | `len([1,2,3])` |
+| `range()` | Number range | `range(5)` |
+| `sum()` | Sum of elements | `sum([1,2,3])` |
 """
 
     output_display.append_markdown(table_md)
 
-    # 5. Списки
-    output_display.append_text("\n## Списки\n", "success")
+    # 5. Lists
+    output_display.append_text("\n## Lists\n", "success")
 
     lists_md = """
-### Нумерованный список
-1. Первый элемент
-2. Второй элемент
-3. Третий элемент
+### Numbered list
+1. First element
+2. Second element
+3. Third element
 
-### Маркированный список
-- Элемент 1
-- Элемент 2
-  - Подэлемент 2.1
-  - Подэлемент 2.2
-- Элемент 3
+### Bulleted list
+- Item 1
+- Item 2
+  - Subitem 2.1
+  - Subitem 2.2
+- Item 3
 """
 
     output_display.append_markdown(lists_md)
 
-    # 6. Демонстрация display_result
-    output_display.append_text("\n## Результат выполнения кода\n", "success")
+    # 6. Demonstrate display_result
+    output_display.append_text("\n## Code Execution Result\n", "success")
 
     sample_stdout = """
 ```
-Результат выполнения:
-Число Фибоначчи F(10) = 55
-Площадь круга = 78.54
+Execution result:
+Fibonacci number F(10) = 55
+Circle area = 78.54
 ```
 
-**Время выполнения:** 0.023 секунды
-**Статус:** ✅ Успешно
+**Execution time:** 0.023 seconds
+**Status:** ✅ Successful
 """
 
-    sample_stderr = "Warning: Используется устаревшая функция print без скобок"
+    sample_stderr = "Warning: Using deprecated print function without parentheses"
 
     output_display.display_result(sample_stdout, sample_stderr, None, enable_markdown=True)
 
-    # Запускаем главный цикл
+    # Start main loop
     root.mainloop()
 
 if __name__ == "__main__":
-    print("Запуск демонстрации MarkdownOutputDisplay...")
-    print("Для использования в основном приложении замените в app.py:")
+    print("Starting MarkdownOutputDisplay demonstration...")
+    print("To use in the main application, replace in app.py:")
     print("    self.output: IOutputDisplay = OutputDisplay(output_container)")
-    print("на:")
+    print("with:")
     print("    from components.output_markdown import MarkdownOutputDisplay")
     print("    self.output: IOutputDisplay = MarkdownOutputDisplay(output_container)")
     print()

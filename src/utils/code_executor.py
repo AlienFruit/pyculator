@@ -1,27 +1,27 @@
-"""Модуль для выполнения Python кода и захвата результатов."""
+"""Module for executing Python code and capturing results."""
 import io
 import os
 import sys
 from contextlib import redirect_stdout, redirect_stderr
 from typing import Dict, Tuple, Optional, List
 import matplotlib
-# Используем TkAgg бэкенд для совместимости с tkinter, но отключим автоматическое открытие окон
+# Use TkAgg backend for tkinter compatibility, but disable automatic window opening
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class CodeExecutor:
-    """Класс для выполнения Python кода и получения результатов."""
-    
+    """Class for executing Python code and getting results."""
+
     def __init__(self):
-        """Инициализация исполнителя кода."""
-        # Отключаем интерактивный режим matplotlib (чтобы plt.show() не блокировал выполнение)
+        """Initialize code executor."""
+        # Disable matplotlib interactive mode (so plt.show() doesn't block execution)
         plt.ioff()
-        
-        # Важно: передаем ссылку на тот же модуль plt, чтобы графики сохранялись
+
+        # Important: pass reference to the same plt module so plots are saved
         self.available_modules = {
-            'plt': plt,  # Это ссылка на глобальный plt модуль
+            'plt': plt,  # This is a reference to the global plt module
             'np': np,
             'numpy': np,
             'matplotlib': plt,
@@ -31,25 +31,25 @@ class CodeExecutor:
     
     def execute(self, code: str, working_directory: Optional[str] = None) -> Dict:
         """
-        Выполнение Python кода.
+        Execute Python code.
 
         Args:
-            code: Код для выполнения
-            working_directory: Рабочая директория для выполнения (если None, используется текущая)
+            code: Code to execute
+            working_directory: Working directory for execution (if None, current is used)
 
         Returns:
-            Словарь с результатами выполнения:
+            Dictionary with execution results:
             {
-                'stdout': str - стандартный вывод,
-                'stderr': str - вывод ошибок,
-                'exception': str - текст исключения если было,
-                'has_plot': bool - есть ли активные графики
+                'stdout': str - standard output,
+                'stderr': str - error output,
+                'exception': str - exception text if any,
+                'has_plot': bool - are there active plots
             }
         """
         if not code.strip():
             return {
                 'stdout': '',
-                'stderr': 'Ошибка: Код не может быть пустым',
+                'stderr': 'Error: Code cannot be empty',
                 'exception': None,
                 'has_plot': False
             }
@@ -65,83 +65,83 @@ class CodeExecutor:
             'figure_numbers': []
         }
         
-        # Сохраняем текущую рабочую директорию
+        # Save current working directory
         original_cwd = os.getcwd()
 
         try:
-            # Меняем рабочую директорию если указана
+            # Change working directory if specified
             if working_directory and os.path.isdir(working_directory):
                 os.chdir(working_directory)
-                # Добавляем рабочую директорию в путь поиска модулей
+                # Add working directory to module search path
                 if working_directory not in sys.path:
                     sys.path.insert(0, working_directory)
 
-            # Графики очищаются в app.py перед вызовом execute
+            # Plots are cleared in app.py before calling execute
 
-            # Создаем обертку для plt.show(), которая не будет открывать окна
+            # Create wrapper for plt.show() that won't open windows
             def show_wrapper(*args, **kwargs):
-                """Обертка для plt.show(), которая предотвращает открытие отдельных окон."""
-                # Не открываем окна, но графики должны сохраниться
-                # В неинтерактивном режиме графики сохраняются автоматически
+                """Wrapper for plt.show() that prevents opening separate windows."""
+                # Don't open windows, but plots should be saved
+                # In non-interactive mode plots are saved automatically
                 pass
 
-            # Выполнение кода
+            # Code execution
             with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
                 local_namespace = self.available_modules.copy()
-                # Переопределяем plt.show чтобы он не открывал окна
+                # Redefine plt.show so it doesn't open windows
                 local_namespace['plt'].show = show_wrapper
-                # Также переопределяем в глобальном пространстве имен для импортированных модулей
+                # Also redefine in global namespace for imported modules
                 import matplotlib.pyplot as plt_module
                 original_show = plt_module.show
                 plt_module.show = show_wrapper
-                
+
                 try:
-                    # Выполняем код
+                    # Execute code
                     exec(code, {"__builtins__": __builtins__}, local_namespace)
-                    
-                    # После выполнения проверяем графики
-                    # plt в local_namespace - это ссылка на глобальный модуль,
-                    # поэтому графики должны быть доступны через глобальный plt
+
+                    # After execution check plots
+                    # plt in local_namespace is a reference to the global module,
+                    # so plots should be available through global plt
                 finally:
-                    # Восстанавливаем оригинальный show
+                    # Restore original show
                     plt_module.show = original_show
             
-            # Получаем вывод
+            # Get output
             result['stdout'] = stdout_capture.getvalue()
             result['stderr'] = stderr_capture.getvalue()
-            
-            # Получаем все активные графики
+
+            # Get all active plots
             figure_numbers = plt.get_fignums()
             result['has_plot'] = len(figure_numbers) > 0
             result['figure_numbers'] = figure_numbers
-            
+
         except Exception as e:
             result['exception'] = str(e)
             result['stderr'] = stderr_capture.getvalue()
         finally:
-            # Восстанавливаем исходную рабочую директорию
+            # Restore original working directory
             try:
                 os.chdir(original_cwd)
             except Exception:
-                # Игнорируем ошибки восстановления директории
+                # Ignore directory restoration errors
                 pass
 
-            # Убираем рабочую директорию из sys.path
+            # Remove working directory from sys.path
             try:
                 if working_directory and working_directory in sys.path:
                     sys.path.remove(working_directory)
             except Exception:
-                # Игнорируем ошибки восстановления sys.path
+                # Ignore sys.path restoration errors
                 pass
 
         return result
     
     def get_figure(self) -> Optional[plt.Figure]:
         """
-        Получение текущей фигуры matplotlib.
-        
+        Get current matplotlib figure.
+
         Returns:
-            Объект Figure или None
+            Figure object or None
         """
         if plt.get_fignums():
             return plt.gcf()
@@ -149,10 +149,10 @@ class CodeExecutor:
     
     def get_all_figures(self) -> List[plt.Figure]:
         """
-        Получение всех активных фигур matplotlib.
-        
+        Get all active matplotlib figures.
+
         Returns:
-            Список объектов Figure
+            List of Figure objects
         """
         figures = []
         figure_numbers = plt.get_fignums()
@@ -161,7 +161,7 @@ class CodeExecutor:
                 fig = plt.figure(fig_num)
                 figures.append(fig)
             except Exception as e:
-                # Игнорируем ошибки получения фигур
+                # Ignore figure retrieval errors
                 pass
         return figures
 

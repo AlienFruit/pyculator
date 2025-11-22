@@ -1,79 +1,79 @@
-# Сборка exe файла для PyCalculator
+# Building exe file for PyCalculator
 
-## Быстрая сборка
+## Quick Build
 
-Для быстрой сборки exe файла запустите PowerShell скрипт:
+To quickly build an exe file, run the PowerShell script:
 
 ```powershell
 .\build_exe.ps1
 ```
 
-## Параметры скрипта
+## Script Parameters
 
-- **Без параметров**: Полная сборка с установкой зависимостей
-- **`-Clean`**: Очистка предыдущих сборок перед новой сборкой
-- **`-NoInstall`**: Пропустить установку зависимостей (если они уже установлены)
+- **No parameters**: Full build with dependency installation
+- **`-Clean`**: Clean previous builds before new build
+- **`-NoInstall`**: Skip dependency installation (if already installed)
 
-### Примеры использования:
+### Usage Examples:
 
 ```powershell
-# Полная сборка с очисткой
+# Full build with cleanup
 .\build_exe.ps1 -Clean
 
-# Быстрая сборка без переустановки зависимостей
+# Quick build without reinstalling dependencies
 .\build_exe.ps1 -NoInstall
 
-# Очистка и полная переустановка
+# Cleanup and full reinstallation
 .\build_exe.ps1 -Clean
 ```
 
-## Что делает скрипт
+## What the script does
 
-1. **Проверяет наличие Python** в системе
-2. **Устанавливает зависимости** из `requirements.txt`
-3. **Проверяет и устанавливает PyInstaller** (если нужно)
-4. **Запускает сборку** exe файла с помощью PyInstaller
-5. **Проверяет результат** и показывает информацию о созданном файле
+1. **Checks for Python** availability in the system
+2. **Installs dependencies** from `requirements.txt`
+3. **Checks and installs PyInstaller** (if needed)
+4. **Runs build** of exe file using PyInstaller
+5. **Checks result** and shows information about the created file
 
-## Результат сборки
+## Build Result
 
-После успешной сборки:
-- В папке `dist/` появится файл `main.exe`
-- Это готовое к запуску приложение
-- exe файл можно копировать и запускать на других компьютерах без установки Python
+After successful build:
+- `main.exe` file will appear in the `dist/` folder
+- This is a ready-to-run application
+- exe file can be copied and run on other computers without installing Python
 
-## Требования
+## Requirements
 
-- **Windows** с установленным Python 3.7+
-- **PowerShell** (доступен по умолчанию в Windows)
-- **Интернет-соединение** для загрузки зависимостей (при первой сборке)
+- **Windows** with Python 3.7+ installed
+- **PowerShell** (available by default in Windows)
+- **Internet connection** for downloading dependencies (on first build)
 
-## Устранение проблем
+## Troubleshooting
 
-### Python не найден
-Убедитесь, что Python установлен и добавлен в PATH:
-1. Скачайте Python с официального сайта
-2. При установке отметьте "Add Python to PATH"
-3. Перезапустите PowerShell
+### Python not found
+Make sure Python is installed and added to PATH:
+1. Download Python from the official website
+2. During installation, check "Add Python to PATH"
+3. Restart PowerShell
 
-### Ошибка доступа
-Запустите PowerShell от имени администратора:
+### Access Error
+Run PowerShell as administrator:
 ```powershell
-# Щелкните правой кнопкой по PowerShell и выберите "Запуск от имени администратора"
+# Right-click PowerShell and select "Run as administrator"
 ```
 
-### Ошибка при установке зависимостей
-Проверьте интернет-соединение и права доступа к pip.
+### Error installing dependencies
+Check internet connection and pip access rights.
 
-## Структура проекта после сборки
+## Project Structure After Build
 
 ```
 PyCalculator/
-├── dist/              # Готовый exe файл
-│   └── main.exe      # Исполняемый файл приложения
-├── build/            # Временные файлы сборки
-├── main.py           # Точка входа
-├── main.spec         # Конфигурация PyInstaller
-├── requirements.txt  # Зависимости
-└── build_exe.ps1     # Скрипт сборки
+├── dist/              # Ready exe file
+│   └── main.exe      # Application executable
+├── build/            # Temporary build files
+├── main.py           # Entry point
+├── main.spec         # PyInstaller configuration
+├── requirements.txt  # Dependencies
+└── build_exe.ps1     # Build script
 ```

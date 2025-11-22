@@ -1,21 +1,21 @@
-"""Точка входа в приложение Python калькулятора."""
+"""Entry point for Python Calculator application."""
 import customtkinter as ctk
 from app import PythonCalculatorApp
 
-# Настройка темы CustomTkinter
+# Setup CustomTkinter theme
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 
 def main():
-    """Главная функция запуска приложения."""
+    """Main function to launch the application."""
     root = ctk.CTk()
     app = PythonCalculatorApp(root)
     
-    # Сохранение данных при закрытии
+    # Save data on closing
     def on_closing():
         app.save_on_close()
-        # Дополнительное закрытие всех фигур matplotlib для гарантии
+        # Additional closing of all matplotlib figures for guarantee
         try:
             import matplotlib.pyplot as plt
             plt.close('all')

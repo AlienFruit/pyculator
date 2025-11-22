@@ -1,4 +1,4 @@
-"""Модуль для управления сохранением и загрузкой данных приложения."""
+"""Module for managing application data saving and loading."""
 import json
 import os
 from typing import Dict, Optional, Tuple
@@ -6,18 +6,18 @@ from typing import Dict, Optional, Tuple
 
 def get_data_directory() -> str:
     """
-    Получение пути к директории для хранения Python файлов.
+    Get path to directory for storing Python files.
 
     Returns:
-        Путь к директории data
+        Path to data directory
     """
-    # Получаем директорию, где находится скрипт
+    # Get directory where script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Переходим в корневую директорию проекта
+    # Go to project root directory
     project_root = os.path.dirname(script_dir)
-    # Создаем путь к папке data
+    # Create path to data folder
     data_dir = os.path.join(project_root, "data")
-    # Создаем папку если её нет
+    # Create folder if it doesn't exist
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     return data_dir
@@ -25,29 +25,29 @@ def get_data_directory() -> str:
 
 def get_app_state_file() -> str:
     """
-    Получение пути к файлу состояния приложения.
-    
+    Get path to application state file.
+
     Returns:
-        Путь к файлу app_state.json в корне проекта
+        Path to app_state.json file in project root
     """
-    # Получаем директорию, где находится скрипт
+    # Get directory where script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Переходим в корневую директорию проекта
+    # Go to project root directory
     project_root = os.path.dirname(script_dir)
-    # Возвращаем путь к файлу app_state.json в корне проекта
+    # Return path to app_state.json file in project root
     return os.path.join(project_root, "app_state.json")
 
 
 class DataManager:
-    """Класс для управления данными приложения в Python файлах."""
+    """Class for managing application data in Python files."""
 
     def __init__(self, data_file: Optional[str] = None, directory: Optional[str] = None):
         """
-        Инициализация менеджера данных.
+        Initialize data manager.
 
         Args:
-            data_file: Путь к файлу данных (если None, используется calculator_data.py в directory)
-            directory: Директория для работы с файлами (если None, используется папка data)
+            data_file: Path to data file (if None, calculator_data.py in directory is used)
+            directory: Directory for working with files (if None, data folder is used)
         """
         if directory is None:
             directory = get_data_directory()
@@ -59,19 +59,19 @@ class DataManager:
 
         self.data_file = data_file
         self._default_code = (
-            "# Введите ваш Python код здесь\n"
-            "# Например:\n"
-            "print('Привет, мир!')\n"
+            "# Enter your Python code here\n"
+            "# For example:\n"
+            "print('Hello, world!')\n"
             "result = 2 + 2\n"
-            "print(f'Результат: {result}')"
+            "print(f'Result: {result}')"
         )
     
     def load_data(self) -> Dict:
         """
-        Загрузка данных из Python файла.
+        Load data from Python file.
 
         Returns:
-            Словарь с данными приложения (только код)
+            Dictionary with application data (code only)
         """
         if not os.path.exists(self.data_file):
             return {"code": ""}
@@ -81,33 +81,33 @@ class DataManager:
                 code = f.read()
                 return {"code": code}
         except Exception as e:
-            print(f"Ошибка загрузки данных: {e}")
+            print(f"Error loading data: {e}")
             return {"code": ""}
     
     def save_data(self, code: str) -> bool:
         """
-        Сохранение данных в Python файл.
+        Save data to Python file.
 
         Args:
-            code: Код для сохранения
+            code: Code to save
 
         Returns:
-            True если сохранение успешно, False иначе
+            True if save successful, False otherwise
         """
         try:
             with open(self.data_file, "w", encoding="utf-8") as f:
                 f.write(code)
             return True
         except Exception as e:
-            print(f"Ошибка сохранения данных: {e}")
+            print(f"Error saving data: {e}")
             return False
     
     def get_code(self) -> str:
         """
-        Получение сохраненного кода.
-        
+        Get saved code.
+
         Returns:
-            Сохраненный код или код по умолчанию
+            Saved code or default code
         """
         data = self.load_data()
         code = data.get("code", "")
@@ -115,13 +115,13 @@ class DataManager:
     
     def load_data_from_file(self, file_path: str) -> Dict:
         """
-        Загрузка данных из указанного Python файла.
+        Load data from specified Python file.
 
         Args:
-            file_path: Путь к Python файлу
+            file_path: Path to Python file
 
         Returns:
-            Словарь с данными приложения (только код)
+            Dictionary with application data (code only)
         """
         if not os.path.exists(file_path):
             return {"code": ""}
@@ -131,22 +131,22 @@ class DataManager:
                 code = f.read()
                 return {"code": code}
         except Exception as e:
-            print(f"Ошибка загрузки данных из {file_path}: {e}")
+            print(f"Error loading data from {file_path}: {e}")
             return {"code": ""}
     
     def save_data_to_file(self, file_path: str, code: str) -> bool:
         """
-        Сохранение данных в указанный Python файл.
+        Save data to specified Python file.
 
         Args:
-            file_path: Путь к Python файлу
-            code: Код для сохранения
+            file_path: Path to Python file
+            code: Code to save
 
         Returns:
-            True если сохранение успешно, False иначе
+            True if save successful, False otherwise
         """
         try:
-            # Создаем директорию, если её нет
+            # Create directory if it doesn't exist
             file_dir = os.path.dirname(file_path)
             if file_dir and not os.path.exists(file_dir):
                 os.makedirs(file_dir)
@@ -155,36 +155,36 @@ class DataManager:
                 f.write(code)
             return True
         except Exception as e:
-            print(f"Ошибка сохранения данных в {file_path}: {e}")
+            print(f"Error saving data to {file_path}: {e}")
             return False
     
     def set_directory(self, directory: str):
         """
-        Установка директории для работы.
+        Set working directory.
 
         Args:
-            directory: Путь к директории
+            directory: Path to directory
         """
         if os.path.isdir(directory):
             self.directory = directory
-            # Обновляем путь к файлу данных по умолчанию
+            # Update path to default data file
             self.data_file = os.path.join(directory, "calculator_data.py")
     
     def get_data_directory(self) -> str:
         """
-        Получение пути к директории для хранения Python файлов.
+        Get path to directory for storing Python files.
 
         Returns:
-            Путь к директории data
+            Path to data directory
         """
         return get_data_directory()
     
     def get_window_size(self) -> Tuple[int, int]:
         """
-        Получение сохраненного размера окна из app_state.json.
+        Get saved window size from app_state.json.
 
         Returns:
-            Кортеж (width, height)
+            Tuple (width, height)
         """
         state = self.load_app_state()
         window_size = state.get("window_size", {})
@@ -195,47 +195,47 @@ class DataManager:
 
     def get_splitter_position(self) -> float:
         """
-        Получение сохраненной позиции разделителя.
+        Get saved splitter position.
 
         Returns:
-            Позиция разделителя (от 0.0 до 1.0, где 0.5 - центр)
+            Splitter position (0.0 to 1.0, where 0.5 is center)
         """
         state = self.load_app_state()
         return state.get("splitter_position", 0.5)
 
     def save_splitter_position(self, position: float) -> bool:
         """
-        Сохранение позиции разделителя.
+        Save splitter position.
 
         Args:
-            position: Позиция разделителя (от 0.0 до 1.0)
+            position: Splitter position (0.0 to 1.0)
 
         Returns:
-            True если сохранение успешно, False иначе
+            True if save successful, False otherwise
         """
         try:
             state_file = get_app_state_file()
 
-            # Загружаем текущее состояние
+            # Load current state
             current_state = self.load_app_state()
 
-            # Обновляем позицию разделителя
+            # Update splitter position
             current_state["splitter_position"] = max(0.0, min(1.0, position))
 
-            # Сохраняем состояние
+            # Save state
             with open(state_file, "w", encoding="utf-8") as f:
                 json.dump(current_state, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"Ошибка сохранения позиции разделителя: {e}")
+            print(f"Error saving splitter position: {e}")
             return False
     
     def load_app_state(self) -> Dict:
         """
-        Загрузка состояния приложения из файла app_state.json.
-        
+        Load application state from app_state.json file.
+
         Returns:
-            Словарь с состоянием приложения
+            Dictionary with application state
         """
         state_file = get_app_state_file()
         if not os.path.exists(state_file):
@@ -249,20 +249,20 @@ class DataManager:
         try:
             with open(state_file, "r", encoding="utf-8") as f:
                 state = json.load(f)
-                # Проверяем, что директория существует
+                # Check that directory exists
                 if "current_directory" in state:
                     if not os.path.isdir(state["current_directory"]):
                         state["current_directory"] = get_data_directory()
                 else:
                     state["current_directory"] = get_data_directory()
-                
-                # Убеждаемся, что window_size есть в состоянии
+
+                # Make sure window_size is in state
                 if "window_size" not in state:
                     state["window_size"] = {"width": 1400, "height": 700}
                 
                 return state
         except Exception as e:
-            print(f"Ошибка загрузки состояния приложения: {e}")
+            print(f"Error loading application state: {e}")
             return {
                 "current_directory": get_data_directory(),
                 "last_file": None,
@@ -272,23 +272,23 @@ class DataManager:
     
     def save_app_state(self, current_directory: Optional[str] = None, last_file: Optional[str] = None, window_size: Optional[Tuple[int, int]] = None) -> bool:
         """
-        Сохранение состояния приложения в файл app_state.json.
-        
+        Save application state to app_state.json file.
+
         Args:
-            current_directory: Текущая выбранная директория
-            last_file: Последний открытый файл
-            window_size: Размер окна (width, height)
-        
+            current_directory: Currently selected directory
+            last_file: Last opened file
+            window_size: Window size (width, height)
+
         Returns:
-            True если сохранение успешно, False иначе
+            True if save successful, False otherwise
         """
         try:
             state_file = get_app_state_file()
             
-            # Загружаем текущее состояние, чтобы сохранить другие параметры
+            # Load current state to save other parameters
             current_state = self.load_app_state()
-            
-            # Обновляем только переданные параметры
+
+            # Update only passed parameters
             if current_directory is not None:
                 current_state["current_directory"] = current_directory
             if last_file is not None:
@@ -298,63 +298,63 @@ class DataManager:
                     "width": window_size[0],
                     "height": window_size[1]
                 }
-            
-            # Сохраняем состояние
+
+            # Save state
             with open(state_file, "w", encoding="utf-8") as f:
                 json.dump(current_state, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"Ошибка сохранения состояния приложения: {e}")
+            print(f"Error saving application state: {e}")
             return False
     
     def get_current_directory(self) -> str:
         """
-        Получение сохраненной текущей директории из состояния приложения.
-        
+        Get saved current directory from application state.
+
         Returns:
-            Путь к текущей директории или папка data по умолчанию
+            Path to current directory or default data folder
         """
         state = self.load_app_state()
         directory = state.get("current_directory", get_data_directory())
-        # Проверяем, что директория существует
+        # Check that directory exists
         if os.path.isdir(directory):
             return directory
         return get_data_directory()
     
     def get_last_file(self) -> Optional[str]:
         """
-        Получение последнего открытого файла из состояния приложения.
-        
+        Get last opened file from application state.
+
         Returns:
-            Путь к последнему файлу или None
+            Path to last file or None
         """
         state = self.load_app_state()
         last_file = state.get("last_file")
-        # Проверяем, что файл существует
+        # Check that file exists
         if last_file and os.path.exists(last_file):
             return last_file
         return None
     
     def clean_data_files(self, directory: Optional[str] = None) -> int:
         """
-        Конвертация старых JSON файлов в Python файлы.
+        Convert old JSON files to Python files.
 
         Args:
-            directory: Директория для конвертации (если None, используется папка data)
+            directory: Directory for conversion (if None, data folder is used)
 
         Returns:
-            Количество конвертированных файлов
+            Number of converted files
         """
         if directory is None:
             directory = get_data_directory()
 
         if not os.path.isdir(directory):
-            print(f"Директория {directory} не существует")
+            print(f"Directory {directory} does not exist")
             return 0
 
         converted_count = 0
 
-        # Проходим по всем JSON файлам в директории
+        # Go through all JSON files in directory
         for filename in os.listdir(directory):
             if not filename.endswith('.json'):
                 continue
@@ -364,28 +364,28 @@ class DataManager:
                 continue
 
             try:
-                # Загружаем данные из JSON файла
+                # Load data from JSON file
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Получаем код
+                # Get code
                 code = data.get("code", "")
 
-                # Создаем новое имя файла с расширением .py
+                # Create new filename with .py extension
                 new_filename = filename.replace('.json', '.py')
                 new_file_path = os.path.join(directory, new_filename)
 
-                # Сохраняем код в новый .py файл
+                # Save code to new .py file
                 with open(new_file_path, "w", encoding="utf-8") as f:
                     f.write(code)
 
-                # Удаляем старый JSON файл
+                # Remove old JSON file
                 os.remove(file_path)
 
                 converted_count += 1
-                print(f"Конвертирован файл: {filename} -> {new_filename}")
+                print(f"Converted file: {filename} -> {new_filename}")
             except Exception as e:
-                print(f"Ошибка при конвертации файла {filename}: {e}")
+                print(f"Error converting file {filename}: {e}")
 
         return converted_count
 

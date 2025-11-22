@@ -1,18 +1,18 @@
-"""Главное приложение Python калькулятора."""
+"""Main application for Python Calculator."""
 import customtkinter as ctk
 import tkinter as tk
 import os
-# Выбор редактора кода:
-# 1. PythonEditor - полный редактор с подсветкой синтаксиса и автодополнением (может иметь проблемы с копированием)
-# 2. PythonEditorCTk - редактор на базе CTkTextbox (надежное копирование/вставка, без подсветки синтаксиса)
-# 3. PythonEditorSimple - упрощенный редактор без сложных обработчиков (максимальная надежность)
+# Code editor selection:
+# 1. PythonEditor - full editor with syntax highlighting and autocompletion (may have copy issues)
+# 2. PythonEditorCTk - editor based on CTkTextbox (reliable copy/paste, no syntax highlighting)
+# 3. PythonEditorSimple - simplified editor without complex handlers (maximum reliability)
 from components.python_editor import PythonEditor
 # Альтернативы:
 # from components.python_editor_ctk import PythonEditorCTk as PythonEditor
 # from components.python_editor_simple import PythonEditorSimple as PythonEditor
-from components.output import OutputDisplay  # Старая реализация (с ручным парсингом)
-from components.output_markdown import MarkdownOutputDisplay  # Новая реализация (с tkhtmlview)
-# Альтернативная реализация: from components.output_console import ConsoleOutputDisplay
+from components.output import OutputDisplay  # Old implementation (with manual parsing)
+from components.output_markdown import MarkdownOutputDisplay  # New implementation (with tkhtmlview)
+# Alternative implementation: from components.output_console import ConsoleOutputDisplay
 from components.output_interface import IOutputDisplay
 from components.plots_display import PlotsDisplay
 from components.toolbar import Toolbar
@@ -22,39 +22,39 @@ from utils.code_executor import CodeExecutor
 
 
 class PythonCalculatorApp:
-    """Главный класс приложения."""
+    """Main application class."""
     
     def __init__(self, root):
         """
-        Инициализация приложения.
-        
+        Initialize the application.
+
         Args:
-            root: Корневое окно CustomTkinter
+            root: Root CustomTkinter window
         """
         self.root = root
         self.root.title("Python Калькулятор")
         
-        # Текущий выбранный файл
+        # Currently selected file
         self.current_file = None
         
-        # Инициализация менеджеров
+        # Initialize managers
         self.data_manager = DataManager()
         self.code_executor = CodeExecutor()
-        
-        # Загрузка сохраненных данных
+
+        # Load saved data
         saved_data = self.data_manager.load_data()
         window_size = self.data_manager.get_window_size()
         self.root.geometry(f"{window_size[0]}x{window_size[1]}")
         
-        # Создание компонентов интерфейса
+        # Create UI components
         self._create_ui()
-        
-        # Редактор пустой по умолчанию (файл не выбран)
+
+        # Editor is empty by default (no file selected)
         self.editor.clear()
     
     def _create_ui(self):
-        """Создание пользовательского интерфейса."""
-        # Панель инструментов
+        """Create the user interface."""
+        # Toolbar
         self.toolbar = Toolbar(
             self.root,
             on_create=self.handle_create_file,
@@ -62,14 +62,14 @@ class PythonCalculatorApp:
             on_run=self.handle_run_code,
             on_select_directory=self.handle_select_directory
         )
-        # Кнопка сохранения неактивна по умолчанию
+        # Save button is disabled by default
         self.toolbar.set_save_enabled(False)
         
-        # Основной контейнер для панели файлов и рабочей области
+        # Main container for file panel and work area
         main_container = ctk.CTkFrame(self.root)
         main_container.pack(fill="both", expand=True)
-        
-        # Загружаем сохраненное состояние приложения
+
+        # Load saved application state
         saved_state = self.data_manager.load_app_state()
         saved_directory = saved_state.get("current_directory")
         if saved_directory and os.path.isdir(saved_directory):
@@ -77,28 +77,28 @@ class PythonCalculatorApp:
         else:
             from utils.data_manager import get_data_directory
             initial_directory = get_data_directory()
-        
-        # Панель файлов (слева)
+
+        # File panel (left side)
         self.file_panel = FilePanel(
             main_container,
             on_file_select=self.handle_file_select,
             on_directory_change=self.handle_directory_change,
             initial_directory=initial_directory
         )
-        # Устанавливаем директорию в data_manager
+        # Set directory in data_manager
         self.data_manager.set_directory(initial_directory)
         
-        # Загружаем последний открытый файл, если он был
+        # Load the last opened file if it existed
         last_file = self.data_manager.get_last_file()
         if last_file:
-            # Небольшая задержка для полной инициализации интерфейса
+            # Small delay for complete UI initialization
             self.root.after(100, lambda: self._load_last_file(last_file))
         
-        # Контейнер для редактора и вывода текста (по центру)
+        # Container for editor and text output (center)
         work_area = ctk.CTkFrame(main_container)
         work_area.pack(side="left", fill="both", expand=True, padx=(5, 0))
 
-        # Создаем PanedWindow для разделения редактора и вывода
+        # Create PanedWindow to separate editor and output
         is_dark = ctk.get_appearance_mode() == "Dark"
         splitter_bg = "#2b2b2b" if is_dark else "#e5e5e5"
         self.splitter = tk.PanedWindow(
@@ -110,86 +110,86 @@ class PythonCalculatorApp:
         )
         self.splitter.pack(fill="both", expand=True)
 
-        # Редактор кода (верхняя панель)
+        # Code editor (top panel)
         editor_container = ctk.CTkFrame(self.splitter)
         self.editor = PythonEditor(editor_container)
         self.splitter.add(editor_container, minsize=200)
 
-        # Область вывода результатов текста (нижняя панель)
+        # Text output results area (bottom panel)
         output_container = ctk.CTkFrame(self.splitter)
-        # Реализации вывода (можно легко переключаться):
-        # Старая реализация (ручной парсинг): OutputDisplay(output_container)
-        # Консольная реализация: ConsoleOutputDisplay(output_container)
-        # Новая реализация (tkhtmlview + markdown): MarkdownOutputDisplay(output_container)
+        # Output implementations (can be easily switched):
+        # Old implementation (manual parsing): OutputDisplay(output_container)
+        # Console implementation: ConsoleOutputDisplay(output_container)
+        # New implementation (tkhtmlview + markdown): MarkdownOutputDisplay(output_container)
         self.output: IOutputDisplay = MarkdownOutputDisplay(output_container)
         self.splitter.add(output_container, minsize=150)
 
-        # Загружаем и применяем сохраненную позицию разделителя после полной инициализации UI
-        # Используем несколько попыток с увеличивающейся задержкой для надежности
+        # Load and apply saved splitter position after complete UI initialization
+        # Use multiple attempts with increasing delay for reliability
         self.root.after(200, lambda: self._load_splitter_position(attempt=1))
         self.root.after(500, lambda: self._load_splitter_position(attempt=2))
         self.root.after(1000, lambda: self._load_splitter_position(attempt=3))
 
-        # Привязываем обработчик изменения позиции разделителя
+        # Bind handler for splitter position changes
         self.splitter.bind('<ButtonRelease-1>', self._on_splitter_moved)
-        # Позиция сохраняется только при отпускании кнопки для предотвращения артефактов
+        # Position is saved only on button release to prevent artifacts
 
-        # Добавляем слушатель изменения темы для обновления цвета разделителя
+        # Add theme change listener to update splitter colors
         ctk.AppearanceModeTracker.add(self._update_splitter_colors)
 
-        # Привязываем обработчик появления окна для финальной загрузки позиции
+        # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
 
-        # Панель графиков (справа) - скрыта по умолчанию
+        # Plots panel (right side) - hidden by default
         self.plots_panel = ctk.CTkFrame(main_container)
-        # Не упаковываем панель сразу - она появится только когда есть графики
+        # Don't pack the panel immediately - it will appear only when there are plots
         self.plots_display = PlotsDisplay(self.plots_panel, on_close=self._on_plots_panel_close)
     
     def handle_run_code(self):
-        """Обработчик выполнения кода."""
+        """Handle code execution."""
         code = self.editor.get_code()
 
-        # Очищаем предыдущие графики и скрываем панель
+        # Clear previous plots and hide panel
         self.plots_display.clear()
         self.plots_display.hide()
 
-        # Очищаем matplotlib графики перед выполнением нового кода
+        # Clear matplotlib plots before executing new code
         import matplotlib.pyplot as plt
-        # Сохраняем информацию о текущих графиках перед очисткой (для отладки)
+        # Save information about current plots before clearing (for debugging)
         old_figures = plt.get_fignums()
         if old_figures:
             print(f"DEBUG: Closing {len(old_figures)} old figures before execution")
         plt.close('all')
 
-        # Определяем рабочую директорию для выполнения кода
+        # Determine working directory for code execution
         if self.current_file:
-            # Если открыт файл, выполняем в его директории
+            # If a file is open, execute in its directory
             current_directory = os.path.dirname(self.current_file)
         else:
-            # Если файл не открыт, используем выбранную директорию
+            # If no file is open, use selected directory
             current_directory = self.file_panel.get_current_directory()
 
         result = self.code_executor.execute(code, working_directory=current_directory)
 
-        # Отображение результатов
+        # Display results
         self.output.display_result(
             stdout=result['stdout'],
             stderr=result['stderr'],
             exception=result['exception']
         )
 
-        # Отображение графиков если есть (в правой панели)
+        # Display plots if any (in right panel)
         if result['has_plot']:
             print(f"DEBUG app: has_plot=True, figure_numbers={result.get('figure_numbers', [])}")
             figures = self.code_executor.get_all_figures()
             print(f"DEBUG app: get_all_figures returned {len(figures)} figures")
             if figures:
                 print(f"DEBUG app: Displaying {len(figures)} figures")
-                # Отображаем все графики в правой панели (панель покажется автоматически)
+                # Display all plots in right panel (panel will show automatically)
                 self.plots_display.display_plots(figures)
             else:
                 print(f"DEBUG app: No figures from get_all_figures, trying get_figure()")
-                # Если графики не получены, но has_plot=True, пробуем получить текущий график
+                # If plots not obtained but has_plot=True, try to get current plot
                 figure = self.code_executor.get_figure()
                 print(f"DEBUG app: get_figure() returned {figure is not None}")
                 if figure:
@@ -198,179 +198,179 @@ class PythonCalculatorApp:
             print(f"DEBUG app: has_plot=False, no plots to display")
 
     def _on_plots_panel_close(self):
-        """Обработчик закрытия панели графиков."""
-        # Панель уже закрыта в PlotsDisplay.close()
-        # Здесь можно добавить дополнительную логику если нужно
-        # НЕ вызываем ничего, что может закрыть приложение
+        """Handle plots panel closing."""
+        # Panel is already closed in PlotsDisplay.close()
+        # Additional logic can be added here if needed
+        # DO NOT call anything that might close the application
         pass
     
     def handle_create_file(self):
-        """Обработчик создания нового файла."""
-        # Запрос названия файла
+        """Handle creating a new file."""
+        # Request file name
         file_name = Toolbar.ask_string(
-            "Создать файл",
-            "Введите название файла (без расширения .json):",
+            "Create file",
+            "Enter file name (without .py extension):",
             ""
         )
         
         if file_name:
-            # Убираем расширение если пользователь его указал
+            # Remove extension if user specified it
             if file_name.endswith('.py'):
                 file_name = file_name[:-3]
-            
+
             if not file_name.strip():
-                Toolbar.show_error("Ошибка", "Название файла не может быть пустым")
+                Toolbar.show_error("Error", "File name cannot be empty")
                 return
-            
-            # Формируем полный путь (используем текущую директорию из file_panel)
+
+            # Form full path (use current directory from file_panel)
             current_dir = self.file_panel.get_current_directory()
             file_path = os.path.join(current_dir, f"{file_name}.py")
-            
-            # Проверяем, не существует ли файл
+
+            # Check if file already exists
             if os.path.exists(file_path):
-                Toolbar.show_error("Ошибка", f"Файл {file_name}.json уже существует")
+                Toolbar.show_error("Error", f"File {file_name}.py already exists")
                 return
             
             try:
-                # Создаем новый файл с кодом по умолчанию
+                # Create new file with default code
                 default_code = (
-                    "# Введите ваш Python код здесь\n"
-                    "# Например:\n"
-                    "print('Привет, мир!')\n"
+                    "# Enter your Python code here\n"
+                    "# For example:\n"
+                    "print('Hello, world!')\n"
                     "result = 2 + 2\n"
-                    "print(f'Результат: {result}')"
+                    "print(f'Result: {result}')"
                 )
                 self.data_manager.save_data_to_file(file_path, default_code)
-                
-                # Обновляем список файлов
+
+                # Update file list
                 self.file_panel.refresh_file_list()
-                
-                # Выбираем созданный файл (это вызовет handle_file_select, который сохранит состояние)
+
+                # Select created file (this will call handle_file_select, which will save state)
                 self.file_panel._select_file(file_path)
-                
+
             except Exception as e:
-                Toolbar.show_error("Ошибка", f"Не удалось создать файл: {str(e)}")
+                Toolbar.show_error("Error", f"Failed to create file: {str(e)}")
     
     def handle_save_file(self):
-        """Обработчик сохранения файла."""
+        """Handle saving file."""
         if not self.current_file:
             return
-        
+
         try:
             self._save_current_file()
-            Toolbar.show_info("Успех", f"Файл сохранен: {os.path.basename(self.current_file)}")
+            Toolbar.show_info("Success", f"File saved: {os.path.basename(self.current_file)}")
         except Exception as e:
-            Toolbar.show_error("Ошибка", f"Не удалось сохранить файл: {str(e)}")
+            Toolbar.show_error("Error", f"Failed to save file: {str(e)}")
     
     def handle_file_select(self, file_path: str):
         """
-        Обработчик выбора файла из панели.
+        Handle file selection from panel.
 
         Args:
-            file_path: Путь к выбранному файлу
+            file_path: Path to selected file
         """
         try:
-            # Загрузка данных из выбранного файла
+            # Load data from selected file
             data = self.data_manager.load_data_from_file(file_path)
             code = data.get("code", "")
-            
-            # Установка кода в редактор
+
+            # Set code in editor
             self.editor.set_code(code)
-            
-            # Сохранение текущего файла
+
+            # Save current file
             self.current_file = file_path
-            
-            # Сохранение последнего открытого файла в состоянии приложения
+
+            # Save last opened file in application state
             self.data_manager.save_app_state(last_file=file_path)
-            
-            # Активация кнопки сохранения
+
+            # Enable save button
             self.toolbar.set_save_enabled(True)
         except Exception as e:
-            Toolbar.show_error("Ошибка", f"Не удалось загрузить файл: {str(e)}")
+            Toolbar.show_error("Error", f"Failed to load file: {str(e)}")
     
     def handle_select_directory(self):
-        """Обработчик выбора директории через тулбар."""
+        """Handle directory selection through toolbar."""
         from tkinter import filedialog
         import os
 
-        # Получаем текущую директорию из file_panel
+        # Get current directory from file_panel
         current_dir = self.file_panel.get_current_directory() if hasattr(self.file_panel, 'get_current_directory') else os.getcwd()
 
-        # Проверяем, существует ли директория, иначе используем домашнюю или текущую
+        # Check if directory exists, otherwise use home or current
         if not os.path.isdir(current_dir):
-            current_dir = os.path.expanduser("~")  # Домашняя директория пользователя
+            current_dir = os.path.expanduser("~")  # User's home directory
             if not os.path.isdir(current_dir):
-                current_dir = os.getcwd()  # Текущая рабочая директория
+                current_dir = os.getcwd()  # Current working directory
 
-        # Открываем диалог выбора директории
+        # Open directory selection dialog
         directory = filedialog.askdirectory(initialdir=current_dir)
 
         if directory:
-            # Вызываем обработчик смены директории
+            # Call directory change handler
             self.handle_directory_change(directory)
 
     def handle_directory_change(self, directory: str):
         """
-        Обработчик смены директории.
+        Handle directory change.
 
         Args:
-            directory: Путь к новой директории
+            directory: Path to new directory
         """
-        # Обновление панели файлов (без вызова callback для избежания рекурсии)
+        # Update file panel (without calling callback to avoid recursion)
         if hasattr(self.file_panel, 'current_directory'):
             self.file_panel.current_directory = directory
         if hasattr(self.file_panel, 'dir_label'):
             self.file_panel.dir_label.configure(text=self.file_panel._truncate_path(directory))
         self.file_panel.refresh_file_list()
 
-        # Обновление менеджера данных
+        # Update data manager
         self.data_manager.set_directory(directory)
-        
-        # Сохранение текущего файла перед сменой директории
+
+        # Save current file before directory change
         if self.current_file:
             self._save_current_file()
-        
-        # Сохранение новой директории в состоянии приложения
+
+        # Save new directory in application state
         self.data_manager.save_app_state(current_directory=directory)
-        
-        # Сброс текущего файла
+
+        # Reset current file
         self.current_file = None
-        
-        # Деактивация кнопки сохранения
+
+        # Disable save button
         self.toolbar.set_save_enabled(False)
-        
-        # Очистка редактора (ничего не отображается)
+
+        # Clear editor (nothing is displayed)
         self.editor.clear()
     
     def _save_current_file(self):
-        """Сохранение текущего файла."""
+        """Save current file."""
         if not self.current_file:
             return
-        
+
         code = self.editor.get_code()
-        
-        # Сохранение в текущий выбранный файл
+
+        # Save to currently selected file
         self.data_manager.save_data_to_file(self.current_file, code)
     
     def _load_last_file(self, file_path: str):
-        """Загрузка последнего открытого файла."""
+        """Load last opened file."""
         try:
             if os.path.exists(file_path):
                 self.file_panel._select_file(file_path)
         except Exception as e:
-            print(f"Не удалось загрузить последний файл: {e}")
+            print(f"Failed to load last file: {e}")
     
     def save_on_close(self):
-        """Сохранение данных при закрытии приложения."""
-        # Сохраняем текущий файл, если он выбран
+        """Save data on application close."""
+        # Save current file if selected
         if self.current_file:
             self._save_current_file()
 
-        # Сохраняем текущую директорию, размер окна и позицию разделителя
+        # Save current directory, window size and splitter position
         current_dir = self.file_panel.get_current_directory()
         window_size = (self.root.winfo_width(), self.root.winfo_height())
 
-        # Получаем текущую позицию разделителя
+        # Get current splitter position
         try:
             sash_pos = self.splitter.sash_coord(0)
             if sash_pos:
@@ -389,24 +389,24 @@ class PythonCalculatorApp:
             last_file=self.current_file,
             window_size=window_size
         )
-        # Сохраняем позицию разделителя отдельно
+        # Save splitter position separately
         self.data_manager.save_splitter_position(splitter_position)
         
-        # Очищаем графики и закрываем все фигуры matplotlib
+        # Clear plots and close all matplotlib figures
         try:
             self.plots_display.clear()
-            # Закрываем все оставшиеся фигуры matplotlib
+            # Close all remaining matplotlib figures
             import matplotlib.pyplot as plt
             plt.close('all')
         except Exception as e:
-            print(f"Ошибка при закрытии графиков: {e}")
+            print(f"Error closing plots: {e}")
 
     def _on_window_configure(self, event=None):
-        """Обработчик изменения размера окна - сохраняет позицию разделителя."""
+        """Handle window resize - saves splitter position."""
         import time
         current_time = time.time()
 
-        # Сохраняем позицию не чаще чем раз в 0.5 секунды
+        # Save position no more often than once every 0.5 seconds
         if current_time - getattr(self, '_last_save_time', 0) > 0.5:
             try:
                 self._on_splitter_moved()
@@ -415,45 +415,45 @@ class PythonCalculatorApp:
                 pass
 
     def _on_window_mapped(self, event=None):
-        """Обработчик появления окна - финальная попытка загрузки позиции."""
-        # Ждем еще немного после появления окна
+        """Handle window appearance - final position loading attempt."""
+        # Wait a bit more after window appears
         self.root.after(100, lambda: self._load_splitter_position(attempt=4))
 
     def _load_splitter_position(self, attempt=1):
-        """Загрузка и применение сохраненной позиции разделителя."""
+        """Load and apply saved splitter position."""
         try:
             position = self.data_manager.get_splitter_position()
 
             if 0.0 <= position <= 1.0:
-                # Принудительно обновляем геометрию окна перед получением размеров
+                # Force window geometry update before getting sizes
                 self.root.update_idletasks()
 
-                # Получаем размеры рабочей области
+                # Get work area dimensions
                 work_area_height = self.splitter.winfo_height()
 
-                # Проверяем, что высота достаточная для корректного позиционирования
-                if work_area_height > 400:  # Сумма минимальных размеров + небольшой запас
-                    # Вычисляем абсолютную позицию разделителя
+                # Check that height is sufficient for correct positioning
+                if work_area_height > 400:  # Sum of minimum sizes + small margin
+                    # Calculate absolute splitter position
                     editor_height = int(work_area_height * position)
-                    # Ограничиваем позицию в допустимых пределах
+                    # Limit position within allowed bounds
                     editor_height = max(200, min(editor_height, work_area_height - 150))
 
-                    # Применяем позицию
+                    # Apply position
                     self.splitter.sash_place(0, 0, editor_height)
 
-                    # Еще раз обновляем геометрию и проверяем результат
+                    # Update geometry again and verify result
                     self.root.after(10, lambda: self._verify_and_adjust_position(position, attempt))
                 else:
-                    # Если размеры еще не готовы, попробуем позже
+                    # If sizes are not ready yet, try later
                     if attempt < 4:
                         self.root.after(200, lambda: self._load_splitter_position(attempt + 1))
         except Exception as e:
-            print(f"Ошибка загрузки позиции разделителя: {e}")
+            print(f"Error loading splitter position: {e}")
 
     def _verify_and_adjust_position(self, expected_position, attempt):
-        """Проверка и корректировка позиции разделителя."""
+        """Verify and adjust splitter position."""
         try:
-            self.root.update_idletasks()  # Обновляем геометрию
+            self.root.update_idletasks()  # Update geometry
 
             sash_pos = self.splitter.sash_coord(0)
             height = self.splitter.winfo_height()
@@ -462,41 +462,41 @@ class PythonCalculatorApp:
                 actual_position = sash_pos[1] / height
                 diff = abs(actual_position - expected_position)
 
-                if diff > 0.05:  # Если разница значительная, пробуем скорректировать
-                    # Вычисляем нужную коррекцию
+                if diff > 0.05:  # If difference is significant, try to correct
+                    # Calculate required correction
                     correction = int((expected_position - actual_position) * height)
                     new_editor_height = sash_pos[1] + correction
 
-                    # Ограничиваем коррекцию
+                    # Limit correction
                     new_editor_height = max(200, min(new_editor_height, height - 150))
 
-                    # Применяем коррекцию
+                    # Apply correction
                     self.splitter.sash_place(0, 0, new_editor_height)
         except Exception as e:
-            print(f"Ошибка проверки позиции: {e}")
+            print(f"Error verifying position: {e}")
 
     def _on_splitter_moved(self, event=None):
-        """Обработчик перемещения разделителя."""
+        """Handle splitter movement."""
         try:
-            # Получаем текущую позицию разделителя
+            # Get current splitter position
             sash_pos = self.splitter.sash_coord(0)
             if sash_pos:
                 work_area_height = self.splitter.winfo_height()
                 if work_area_height > 0:
                     position = sash_pos[1] / work_area_height
-                    # Сохраняем позицию
+                    # Save position
                     self.data_manager.save_splitter_position(position)
         except Exception as e:
-            print(f"Ошибка сохранения позиции разделителя: {e}")
+            print(f"Error saving splitter position: {e}")
 
     def _update_splitter_colors(self):
-        """Обновление цвета фона разделителя при смене темы."""
+        """Update splitter background color when theme changes."""
         try:
             is_dark = ctk.get_appearance_mode() == "Dark"
-            # Используем статические цвета вместо динамического получения из темы
+            # Use static colors instead of dynamic theme retrieval
             bg_color = "#2b2b2b" if is_dark else "#e5e5e5"
             self.splitter.configure(bg=bg_color)
         except Exception as e:
-            print(f"Ошибка обновления цвета разделителя: {e}")
+            print(f"Error updating splitter color: {e}")
 
 
