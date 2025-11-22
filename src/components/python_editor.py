@@ -13,6 +13,8 @@ import tkinter as tk
 from tkinter import scrolledtext
 import re
 from typing import Optional, List, Tuple
+from utils.keyboard_utils import copy_to_clipboard, get_selected_text, get_clipboard_text, bind_case_insensitive
+from utils.bindtag_context import BindTagContext
 
 try:
     from idlelib.colorizer import ColorDelegator
@@ -118,20 +120,14 @@ class PythonEditor:
         self.text_widget.bind("<Control-space>", lambda e: self._try_autocomplete())
         
         # Явная привязка стандартных комбинаций клавиш для копирования/вставки
-        # Используем приоритетные привязки, чтобы гарантировать их работу
-        self.text_widget.bind("<Control-c>", self._copy_text, add="+")
-        self.text_widget.bind("<Control-C>", self._copy_text, add="+")
-        self.text_widget.bind("<Control-v>", self._paste_text, add="+")
-        self.text_widget.bind("<Control-V>", self._paste_text, add="+")
-        self.text_widget.bind("<Control-x>", self._cut_text, add="+")
-        self.text_widget.bind("<Control-X>", self._cut_text, add="+")
-        self.text_widget.bind("<Control-a>", self._select_all, add="+")
-        self.text_widget.bind("<Control-A>", self._select_all, add="+")
+        # Используем утилиты для автоматической поддержки обоих регистров
+        bind_case_insensitive(self.text_widget, "<Control-c>", self._copy_text, add="+")
+        bind_case_insensitive(self.text_widget, "<Control-v>", self._paste_text, add="+")
+        bind_case_insensitive(self.text_widget, "<Control-x>", self._cut_text, add="+")
+        bind_case_insensitive(self.text_widget, "<Control-a>", self._select_all, add="+")
         # Горячие клавиши для работы с файлами
-        self.text_widget.bind("<Control-n>", self._on_ctrl_n, add="+")
-        self.text_widget.bind("<Control-N>", self._on_ctrl_n, add="+")
-        self.text_widget.bind("<Control-s>", self._on_ctrl_s, add="+")
-        self.text_widget.bind("<Control-S>", self._on_ctrl_s, add="+")
+        bind_case_insensitive(self.text_widget, "<Control-n>", self._on_ctrl_n, add="+")
+        bind_case_insensitive(self.text_widget, "<Control-s>", self._on_ctrl_s, add="+")
         
         # Отслеживаем изменения текста для обновления подсветки после вставки
         self.text_widget.bind("<<Modified>>", self._on_text_modified)
@@ -342,76 +338,103 @@ class PythonEditor:
     
     def _on_key_press_up(self, event):
         """Обработка клавиши Вверх для навигации по автодополнению."""
-        if self.autocomplete_active and self.autocomplete_listbox:
-            self._autocomplete_navigate(event)
-            return "break"
-        return None
+        try:
+            if self.autocomplete_active and self.autocomplete_listbox:
+                self._autocomplete_navigate(event)
+                return "break"
+            return None
+        except Exception as e:
+            print(f"Ошибка обработки клавиши Вверх: {e}")
+            return None
     
     def _on_key_press_down(self, event):
         """Обработка клавиши Вниз для навигации по автодополнению."""
-        if self.autocomplete_active and self.autocomplete_listbox:
-            self._autocomplete_navigate(event)
-            return "break"
-        return None
+        try:
+            if self.autocomplete_active and self.autocomplete_listbox:
+                self._autocomplete_navigate(event)
+                return "break"
+            return None
+        except Exception as e:
+            print(f"Ошибка обработки клавиши Вниз: {e}")
+            return None
     
     def _on_key_press_return(self, event):
         """Обработка клавиши Enter для вставки автодополнения."""
-        if self.autocomplete_active and self.autocomplete_listbox:
-            self._insert_autocomplete()
-            return "break"
-        return None
+        try:
+            if self.autocomplete_active and self.autocomplete_listbox:
+                self._insert_autocomplete()
+                return "break"
+            return None
+        except Exception as e:
+            print(f"Ошибка обработки клавиши Enter: {e}")
+            return None
     
     def _on_key_press(self, event):
         """Обработка нажатия клавиш для закрытия подсказок."""
-        # Закрываем всплывающие подсказки при нажатии любой клавиши
-        self._close_tooltip()
-        
-        # Escape закрывает автодополнение
-        if event.keysym == "Escape" and self.autocomplete_active:
-            self._close_autocomplete()
-            return "break"
-        
-        # Все остальные клавиши обрабатываются редактором как обычно
-        return None
+        try:
+            # Закрываем всплывающие подсказки при нажатии любой клавиши
+            self._close_tooltip()
+            
+            # Escape закрывает автодополнение
+            if event.keysym == "Escape" and self.autocomplete_active:
+                self._close_autocomplete()
+                return "break"
+            
+            # Все остальные клавиши обрабатываются редактором как обычно
+            return None
+        except Exception as e:
+            print(f"Ошибка в обработчике нажатия клавиши: {e}")
+            return None
     
     def _on_f5(self, event):
         """Обработка нажатия F5 для выполнения кода."""
-        if self.run_code_callback:
-            self.run_code_callback()
-        return "break"
+        try:
+            if self.run_code_callback:
+                self.run_code_callback()
+            return "break"
+        except Exception as e:
+            print(f"Ошибка выполнения кода (F5): {e}")
+            return None
     
     def _on_ctrl_n(self, event):
         """Обработка нажатия Ctrl+N для создания нового файла."""
-        if self.create_file_callback:
-            self.create_file_callback()
-        return "break"
+        try:
+            if self.create_file_callback:
+                self.create_file_callback()
+            return "break"
+        except Exception as e:
+            print(f"Ошибка создания файла (Ctrl+N): {e}")
+            return None
     
     def _on_ctrl_s(self, event):
         """Обработка нажатия Ctrl+S для сохранения файла."""
-        if self.save_file_callback:
-            self.save_file_callback()
-        return "break"
+        try:
+            if self.save_file_callback:
+                self.save_file_callback()
+            return "break"
+        except Exception as e:
+            print(f"Ошибка сохранения файла (Ctrl+S): {e}")
+            return None
     
     def _on_tab(self, event):
         """Обработка Tab для автодополнения."""
-        if self.autocomplete_active and self.autocomplete_listbox:
-            # Выбор первого элемента из списка
-            if self.autocomplete_listbox.size() > 0:
-                self._insert_autocomplete(0)
-                return "break"
-        return None
+        try:
+            if self.autocomplete_active and self.autocomplete_listbox:
+                # Выбор первого элемента из списка
+                if self.autocomplete_listbox.size() > 0:
+                    self._insert_autocomplete(0)
+                    return "break"
+            return None
+        except Exception as e:
+            print(f"Ошибка обработки Tab для автодополнения: {e}")
+            return None
     
     def _copy_text(self, event=None):
         """Копирование выделенного текста."""
         try:
-            # Проверяем, есть ли выделенный текст
-            if self.text_widget.tag_ranges("sel"):
-                # Получаем выделенный текст
-                selected_text = self.text_widget.get("sel.first", "sel.last")
-                if selected_text:
-                    # Копируем в буфер обмена напрямую
-                    self.text_widget.clipboard_clear()
-                    self.text_widget.clipboard_append(selected_text)
+            selected_text = get_selected_text(self.text_widget)
+            if selected_text:
+                copy_to_clipboard(self.text_widget, selected_text)
             return "break"  # Предотвращаем дальнейшую обработку
         except Exception as e:
             print(f"Ошибка копирования: {e}")
@@ -420,17 +443,14 @@ class PythonEditor:
     def _cut_text(self, event=None):
         """Вырезание выделенного текста."""
         try:
-            if self.text_widget.tag_ranges("sel"):
-                # Получаем выделенный текст
-                selected_text = self.text_widget.get("sel.first", "sel.last")
-                if selected_text:
-                    # Копируем в буфер обмена
-                    self.text_widget.clipboard_clear()
-                    self.text_widget.clipboard_append(selected_text)
-                    # Удаляем выделенный текст
-                    self.text_widget.delete("sel.first", "sel.last")
-                    # Обновляем подсветку после вырезания
-                    self.text_widget.after(10, self._update_syntax_highlighting)
+            selected_text = get_selected_text(self.text_widget)
+            if selected_text:
+                # Копируем в буфер обмена
+                copy_to_clipboard(self.text_widget, selected_text)
+                # Удаляем выделенный текст
+                self.text_widget.delete("sel.first", "sel.last")
+                # Обновляем подсветку после вырезания
+                self.text_widget.after(10, self._update_syntax_highlighting)
             return "break"
         except Exception as e:
             print(f"Ошибка вырезания: {e}")
@@ -439,13 +459,7 @@ class PythonEditor:
     def _paste_text(self, event=None):
         """Вставка текста из буфера обмена."""
         try:
-            # Получаем текст из буфера обмена
-            try:
-                clipboard_text = self.text_widget.clipboard_get()
-            except tk.TclError:
-                # Буфер обмена пуст или недоступен
-                return "break"
-            
+            clipboard_text = get_clipboard_text(self.text_widget)
             if clipboard_text:
                 # Удаляем выделенный текст, если есть
                 if self.text_widget.tag_ranges("sel"):
@@ -470,7 +484,7 @@ class PythonEditor:
             self.text_widget.see("insert")
             return "break"
         except Exception as e:
-            print(f"Ошибка выделения всего: {e}")
+            print(f"Ошибка выделения всего текста (Ctrl+A): {e}")
             return None
     
     def _setup_context_menu(self):
@@ -652,27 +666,21 @@ class PythonEditor:
         
         self.autocomplete_active = True
         
-        # Используем bindtags для управления порядком обработчиков
+        # Используем контекстный менеджер для управления bindtags
         # Это позволяет нашим обработчикам вызываться первыми, но не блокировать стандартное поведение
         # когда автокомплит неактивен
-        current_tags = list(self.text_widget.bindtags())
-        # Создаем специальный тег для наших обработчиков автокомплита
         autocomplete_tag = "AutocompleteHandlers"
-        if autocomplete_tag not in current_tags:
-            # Добавляем наш тег в начало списка, чтобы наши обработчики вызывались первыми
-            current_tags.insert(0, autocomplete_tag)
-            self.text_widget.bindtags(current_tags)
+        self._autocomplete_tag = autocomplete_tag
+        
+        # Сохраняем контекст для последующего закрытия
+        self._bindtag_context = BindTagContext(self.text_widget, autocomplete_tag)
+        self._bindtag_context.__enter__()
         
         # Привязываем события навигации к специальному тегу
         # Это позволяет нашим обработчикам вызываться первыми
         self.text_widget.bind_class(autocomplete_tag, "<Up>", self._on_key_press_up)
         self.text_widget.bind_class(autocomplete_tag, "<Down>", self._on_key_press_down)
         self.text_widget.bind_class(autocomplete_tag, "<Return>", self._on_key_press_return)
-        
-        # Сохраняем имя тега для последующего удаления
-        self._autocomplete_tag = autocomplete_tag
-        # Для bind_class не нужны ID, поэтому просто отмечаем, что привязки созданы
-        self._nav_bind_ids = [True, True, True]  # Просто флаги, что привязки созданы
         
         # Обновляем окно, чтобы оно точно отобразилось
         self.autocomplete_window.update_idletasks()
@@ -769,34 +777,35 @@ class PythonEditor:
     
     def _close_autocomplete(self, event=None):
         """Закрытие окна автодополнения."""
-        if self.autocomplete_window:
-            self.autocomplete_window.destroy()
-            self.autocomplete_window = None
-            self.autocomplete_listbox = None
-            self.autocomplete_active = False
-            
-            # Отвязываем события навигации от специального тега
-            if hasattr(self, '_nav_bind_ids') and self._nav_bind_ids:
-                if hasattr(self, '_autocomplete_tag'):
+        try:
+            if self.autocomplete_window:
+                self.autocomplete_window.destroy()
+                self.autocomplete_window = None
+                self.autocomplete_listbox = None
+                self.autocomplete_active = False
+                
+                # Отвязываем события навигации от специального тега
+                if hasattr(self, '_autocomplete_tag') and self._autocomplete_tag:
                     try:
                         # Удаляем привязки от класса
                         self.text_widget.unbind_class(self._autocomplete_tag, "<Up>")
                         self.text_widget.unbind_class(self._autocomplete_tag, "<Down>")
                         self.text_widget.unbind_class(self._autocomplete_tag, "<Return>")
-                    except:
-                        pass
-                self._nav_bind_ids = []
-            
-            # Удаляем специальный тег из bindtags, чтобы восстановить стандартное поведение
-            if hasattr(self, '_autocomplete_tag'):
-                try:
-                    current_tags = list(self.text_widget.bindtags())
-                    if self._autocomplete_tag in current_tags:
-                        current_tags.remove(self._autocomplete_tag)
-                        self.text_widget.bindtags(current_tags)
-                except:
-                    pass
+                    except Exception as e:
+                        print(f"Ошибка при отвязывании событий автодополнения: {e}")
+                
+                # Закрываем контекстный менеджер для удаления тега
+                if hasattr(self, '_bindtag_context') and self._bindtag_context:
+                    try:
+                        self._bindtag_context.__exit__(None, None, None)
+                        self._bindtag_context = None
+                    except Exception as e:
+                        print(f"Ошибка при закрытии контекста bindtags: {e}")
+                
                 self._autocomplete_tag = None
+        except Exception as e:
+            print(f"Ошибка при закрытии автодополнения: {e}")
+        
         if event:
             return None
     

@@ -19,6 +19,7 @@ from components.toolbar import Toolbar
 from components.file_panel import FilePanel
 from utils.data_manager import DataManager
 from utils.code_executor import CodeExecutor
+from utils.hotkey_manager import HotkeyManager
 
 
 class PythonCalculatorApp:
@@ -40,6 +41,7 @@ class PythonCalculatorApp:
         # Initialize managers
         self.data_manager = DataManager()
         self.code_executor = CodeExecutor()
+        self.hotkey_manager = HotkeyManager(self.root)
 
         # Load saved data
         saved_data = self.data_manager.load_data()
@@ -149,9 +151,19 @@ class PythonCalculatorApp:
         # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
         
-        # Обработчик Del для удаления файла (на уровне root окна)
-        self.root.bind('<Delete>', self._on_delete_key)
-        self.root.bind('<KP_Delete>', self._on_delete_key)  # Delete на цифровой клавиатуре
+        # Обработчик Del для удаления файла через HotkeyManager
+        self.hotkey_manager.register(
+            '<Delete>',
+            self._on_delete_key,
+            component='PythonCalculatorApp',
+            description='Удалить файл (если нет выделенного текста)'
+        )
+        self.hotkey_manager.register(
+            '<KP_Delete>',
+            self._on_delete_key,
+            component='PythonCalculatorApp',
+            description='Удалить файл (Delete на цифровой клавиатуре)'
+        )
 
         # Plots panel (right side) - hidden by default
         self.plots_panel = ctk.CTkFrame(main_container)
@@ -219,19 +231,22 @@ class PythonCalculatorApp:
     
     def _on_delete_key(self, event):
         """Обработка нажатия Del для удаления файла."""
-        # Проверяем, есть ли выделенный текст в редакторе
-        # Если есть - позволяем редактору обработать удаление текста
         try:
-            text_widget = self.editor.text_widget
-            if text_widget.tag_ranges("sel"):
-                # Есть выделенный текст - не обрабатываем, позволяем редактору удалить текст
-                return None
-        except:
-            pass
-        
-        # Если нет выделенного текста и есть открытый файл - удаляем файл
-        if self.current_file:
-            self.handle_delete_file()
+            # Проверяем, есть ли выделенный текст в редакторе
+            # Если есть - позволяем редактору обработать удаление текста
+            try:
+                text_widget = self.editor.text_widget
+                if text_widget.tag_ranges("sel"):
+                    # Есть выделенный текст - не обрабатываем, позволяем редактору удалить текст
+                    return None
+            except Exception as e:
+                print(f"Ошибка проверки выделения текста: {e}")
+            
+            # Если нет выделенного текста и есть открытый файл - удаляем файл
+            if self.current_file:
+                self.handle_delete_file()
+        except Exception as e:
+            print(f"Ошибка обработки Delete для удаления файла: {e}")
         
         return None
     

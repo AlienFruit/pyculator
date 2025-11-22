@@ -3,6 +3,7 @@ import customtkinter as ctk
 import tkinter as tk
 from typing import Optional
 from components.output_interface import IOutputDisplay
+from utils.keyboard_utils import copy_to_clipboard, get_selected_text, bind_case_insensitive
 import re
 
 
@@ -110,9 +111,10 @@ class MarkdownOutputDisplay(IOutputDisplay):
         text_widget = self.textbox._textbox
         
         # Ctrl+C для копирования выделенного текста (только когда фокус на этом виджете)
-        text_widget.bind("<Control-c>", self._copy_selected_text, add="+")
+        # Используем утилиты для автоматической поддержки обоих регистров
+        bind_case_insensitive(text_widget, "<Control-c>", self._copy_selected_text, add="+")
         # Ctrl+A для выделения всего текста (только когда фокус на этом виджете)
-        text_widget.bind("<Control-a>", lambda e: self._select_all(), add="+")
+        bind_case_insensitive(text_widget, "<Control-a>", lambda e: self._select_all(), add="+")
         # НЕ устанавливаем фокус автоматически - это может мешать редактору кода
 
     def _show_context_menu(self, event):
@@ -125,19 +127,31 @@ class MarkdownOutputDisplay(IOutputDisplay):
     def _copy_selected_text(self, event=None):
         """Копирование выделенного текста."""
         try:
-            selected_text = self.textbox.get("sel.first", "sel.last")
+            # Получаем внутренний текстовый виджет для работы с выделением
+            text_widget = self.textbox._textbox
+            selected_text = get_selected_text(text_widget)
             if selected_text:
-                self._frame.clipboard_clear()
-                self._frame.clipboard_append(selected_text)
+                copy_to_clipboard(self._frame, selected_text)
                 print(f"Выделенный текст скопирован ({len(selected_text)} символов)")
-        except tk.TclError:
-            # Нет выделенного текста, копируем весь
-            self._copy_all_text()
+            else:
+                # Нет выделенного текста, копируем весь
+                self._copy_all_text()
+        except Exception as e:
+            print(f"Ошибка копирования выделенного текста: {e}")
+            # В случае ошибки пробуем скопировать весь текст
+            try:
+                self._copy_all_text()
+            except:
+                pass
 
     def _select_all(self, event=None):
         """Выделение всего текста."""
-        self.textbox.tag_add("sel", "1.0", "end")
-        return "break"  # Предотвращаем стандартное поведение
+        try:
+            self.textbox.tag_add("sel", "1.0", "end")
+            return "break"  # Предотвращаем стандартное поведение
+        except Exception as e:
+            print(f"Ошибка выделения всего текста (Ctrl+A): {e}")
+            return None
 
     def _copy_all_text(self):
         """Копирование всего текста в буфер обмена."""
@@ -145,12 +159,12 @@ class MarkdownOutputDisplay(IOutputDisplay):
             # Получаем весь текст из текстового виджета
             text_content = self.textbox.get("1.0", "end-1c")
 
-            # Копируем в буфер обмена
-            self._frame.clipboard_clear()
-            self._frame.clipboard_append(text_content)
-
-            # Показываем уведомление в консоли
-            print(f"Текст скопирован в буфер обмена ({len(text_content)} символов)")
+            # Копируем в буфер обмена используя утилиту
+            if copy_to_clipboard(self._frame, text_content):
+                # Показываем уведомление в консоли
+                print(f"Текст скопирован в буфер обмена ({len(text_content)} символов)")
+            else:
+                print("Ошибка: не удалось скопировать текст в буфер обмена")
 
         except Exception as e:
             print(f"Ошибка копирования текста: {e}")
