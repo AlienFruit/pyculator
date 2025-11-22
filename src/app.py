@@ -154,20 +154,6 @@ class PythonCalculatorApp:
         # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
         
-        # Обработчик Del для удаления файла через HotkeyManager
-        self.hotkey_manager.register(
-            '<Delete>',
-            self._on_delete_key,
-            component='PythonCalculatorApp',
-            description='Удалить файл (если нет выделенного текста)'
-        )
-        self.hotkey_manager.register(
-            '<KP_Delete>',
-            self._on_delete_key,
-            component='PythonCalculatorApp',
-            description='Удалить файл (Delete на цифровой клавиатуре)'
-        )
-        
         # F1 для справки по горячим клавишам
         self.hotkey_manager.register(
             '<F1>',
@@ -253,28 +239,6 @@ class PythonCalculatorApp:
         # Additional logic can be added here if needed
         # DO NOT call anything that might close the application
         pass
-    
-    def _on_delete_key(self, event):
-        """Обработка нажатия Del для удаления файла."""
-        try:
-            # Проверяем, есть ли выделенный текст в редакторе
-            # Если есть - позволяем редактору обработать удаление текста
-            try:
-                text_widget = self.editor.text_widget
-                if text_widget.tag_ranges("sel"):
-                    # Есть выделенный текст - не обрабатываем, позволяем редактору удалить текст
-                    return None
-            except Exception as e:
-                print(f"Ошибка проверки выделения текста: {e}")
-            
-            # Если нет выделенного текста и есть открытый файл - удаляем файл
-            if self.current_file:
-                self.handle_delete_file()
-                Notification.show(self.root, "Файл удален")
-        except Exception as e:
-            print(f"Ошибка обработки Delete для удаления файла: {e}")
-        
-        return None
     
     def _on_ctrl_n_global(self, event):
         """Обработка нажатия Ctrl+N для создания нового файла (глобальная горячая клавиша)."""
@@ -398,6 +362,9 @@ class PythonCalculatorApp:
             saved_state = self.data_manager.load_app_state()
             if saved_state.get("last_file") == deleted_file_path:
                 self.data_manager.save_app_state(last_file=None)
+
+            # Show success notification
+            Notification.show(self.root, "Файл удален")
 
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to delete file: {str(e)}")
