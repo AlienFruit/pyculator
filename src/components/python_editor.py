@@ -126,9 +126,7 @@ class PythonEditor:
         bind_case_insensitive(self.text_widget, "<Control-v>", self._paste_text, add="+")
         bind_case_insensitive(self.text_widget, "<Control-x>", self._cut_text, add="+")
         bind_case_insensitive(self.text_widget, "<Control-a>", self._select_all, add="+")
-        # Горячие клавиши для работы с файлами
-        bind_case_insensitive(self.text_widget, "<Control-n>", self._on_ctrl_n, add="+")
-        bind_case_insensitive(self.text_widget, "<Control-s>", self._on_ctrl_s, add="+")
+        # Горячие клавиши Ctrl+N и Ctrl+S теперь регистрируются глобально в app.py
         
         # Отслеживаем изменения текста для обновления подсветки после вставки
         self.text_widget.bind("<<Modified>>", self._on_text_modified)
@@ -396,28 +394,6 @@ class PythonEditor:
             return "break"
         except Exception as e:
             print(f"Ошибка выполнения кода (F5): {e}")
-            return None
-    
-    def _on_ctrl_n(self, event):
-        """Обработка нажатия Ctrl+N для создания нового файла."""
-        try:
-            if self.create_file_callback:
-                self.create_file_callback()
-                Notification.show(self.text_widget, "Создание нового файла...")
-            return "break"
-        except Exception as e:
-            print(f"Ошибка создания файла (Ctrl+N): {e}")
-            return None
-    
-    def _on_ctrl_s(self, event):
-        """Обработка нажатия Ctrl+S для сохранения файла."""
-        try:
-            if self.save_file_callback:
-                self.save_file_callback()
-                Notification.show(self.text_widget, "Файл сохранен")
-            return "break"
-        except Exception as e:
-            print(f"Ошибка сохранения файла (Ctrl+S): {e}")
             return None
     
     def _on_tab(self, event):

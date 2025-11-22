@@ -175,6 +175,20 @@ class PythonCalculatorApp:
             component='PythonCalculatorApp',
             description='Показать справку по горячим клавишам'
         )
+        
+        # Глобальные горячие клавиши для работы с файлами
+        self.hotkey_manager.register_case_insensitive(
+            '<Control-n>',
+            self._on_ctrl_n_global,
+            component='PythonCalculatorApp',
+            description='Создать новый файл'
+        )
+        self.hotkey_manager.register_case_insensitive(
+            '<Control-s>',
+            self._on_ctrl_s_global,
+            component='PythonCalculatorApp',
+            description='Сохранить файл'
+        )
 
         # Plots panel (right side) - hidden by default
         self.plots_panel = ctk.CTkFrame(main_container)
@@ -261,6 +275,33 @@ class PythonCalculatorApp:
             print(f"Ошибка обработки Delete для удаления файла: {e}")
         
         return None
+    
+    def _on_ctrl_n_global(self, event):
+        """Обработка нажатия Ctrl+N для создания нового файла (глобальная горячая клавиша)."""
+        try:
+            # Сохраняем текущий файл до создания нового
+            previous_file = self.current_file
+            self.handle_create_file()
+            # Если файл изменился, значит новый файл был создан
+            if self.current_file != previous_file:
+                Notification.show(self.root, "Создание нового файла...")
+            return "break"
+        except Exception as e:
+            Notification.show(self.root, f"Ошибка создания файла: {str(e)}", duration=4000)
+            print(f"Ошибка создания файла (Ctrl+N): {e}")
+            return "break"
+    
+    def _on_ctrl_s_global(self, event):
+        """Обработка нажатия Ctrl+S для сохранения файла (глобальная горячая клавиша)."""
+        try:
+            if self.current_file:
+                self.handle_save_file()
+                Notification.show(self.root, "Файл сохранен")
+            return "break"
+        except Exception as e:
+            Notification.show(self.root, f"Ошибка сохранения файла: {str(e)}", duration=4000)
+            print(f"Ошибка сохранения файла (Ctrl+S): {e}")
+            return "break"
     
     def handle_create_file(self):
         """Handle creating a new file."""
