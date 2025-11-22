@@ -2,6 +2,12 @@
 
 A modern Python calculator with GUI for executing scripts, plotting graphs, and data analysis.
 
+## ⚠️ Disclaimer
+
+**This project is a vibe code experiment and is created for educational purposes.**
+
+Please **do not use** the solutions, architectural approaches, and patterns implemented in this project as a reference for your own projects. The code may contain suboptimal solutions, simplifications, and experimental approaches that are not suitable for production use.
+
 ## Features
 
 - **Two-panel interface**: Python code editor on the left, output area on the right
