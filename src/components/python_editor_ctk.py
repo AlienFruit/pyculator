@@ -88,8 +88,9 @@ class PythonEditorCTk:
             line, col = map(int, cursor_pos.split('.'))
             code = self.text_widget.get("1.0", cursor_pos)
             
-            script = jedi.Script(code, line, col)
-            completions = script.completions()
+            # В jedi 0.19+ API изменился: используем Script(code).complete(line, col)
+            script = jedi.Script(code)
+            completions = script.complete(line, col)
             filtered_completions = [c for c in completions if not c.name.startswith('_') or c.name.startswith('__')]
             
             if filtered_completions:

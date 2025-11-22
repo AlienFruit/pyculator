@@ -1,4 +1,13 @@
-"""Улучшенный компонент редактора Python кода с подсветкой синтаксиса и автодополнением."""
+"""
+Улучшенный компонент редактора Python кода с подсветкой синтаксиса и автодополнением.
+
+Автодополнение:
+- Автоматически появляется при вводе точки (например, "str.")
+- Автоматически появляется при вводе букв и цифр (с небольшой задержкой)
+- Можно вызвать вручную нажатием Ctrl+Space
+- Навигация: стрелки Вверх/Вниз для выбора, Tab или Enter для вставки, Escape для закрытия
+- Использует библиотеку jedi для анализа кода и предложения вариантов
+"""
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import scrolledtext
@@ -85,9 +94,15 @@ class PythonEditor:
         self._setup_context_menu()
         
         # Привязка событий для автодополнения
+        # События для навигации будут привязываться динамически при открытии автодополнения
+        # Также привязываем общий KeyPress для закрытия подсказок и других обработок
+        self.text_widget.bind("<KeyPress>", self._on_key_press)
         self.text_widget.bind("<KeyRelease>", self._on_key_release)
-        self.text_widget.bind("<Tab>", self._on_tab)
-        self.text_widget.bind("<Escape>", self._close_autocomplete)
+        self.text_widget.bind("<Tab>", self._on_tab, add="+")
+        self.text_widget.bind("<Escape>", self._close_autocomplete, add="+")
+        
+        # ID привязок для навигации (для последующего отвязывания)
+        self._nav_bind_ids = []
         self.text_widget.bind("<Button-1>", self._on_mouse_click)
         self.text_widget.bind("<Button-3>", self._show_context_menu)  # Правая кнопка мыши
         self.text_widget.bind("<Control-space>", lambda e: self._try_autocomplete())
@@ -112,7 +127,7 @@ class PythonEditor:
         # Привязка событий для всплывающих подсказок
         self.text_widget.bind("<Motion>", self._on_mouse_motion)
         self.text_widget.bind("<Leave>", lambda e: self._close_tooltip())
-        self.text_widget.bind("<KeyPress>", lambda e: self._close_tooltip())
+        # KeyPress для закрытия подсказок обрабатывается в _on_key_press
 
         # Вставка начального кода
         if initial_code:
@@ -280,17 +295,25 @@ class PythonEditor:
                 return None  # Позволяем стандартным обработчикам работать
             return None  # Для других комбинаций с Control тоже пропускаем
         
-        if event.keysym in ['Return', 'Escape', 'Up', 'Down', 'Left', 'Right']:
+        # Если автодополнение активно, стрелки Up/Down и Enter обрабатываются в _on_key_press
+        # Здесь мы их игнорируем, чтобы они не мешали навигации по списку
+        if self.autocomplete_active and self.autocomplete_listbox:
+            if event.keysym in ['Up', 'Down', 'Return']:
+                return None  # Эти клавиши обрабатываются в _on_key_press для автодополнения
+        
+        # Закрываем автодополнение при других клавишах навигации
+        if event.keysym in ['Escape', 'Left', 'Right', 'Home', 'End']:
             self._close_autocomplete()
             return None
         
         # Автодополнение при вводе точки
         if event.char == '.':
             # Небольшая задержка для обработки точки
-            self.text_widget.after(10, self._try_autocomplete)
-        elif event.keysym and len(event.keysym) == 1 and event.char:
-            # Автодополнение при вводе букв/цифр
-            self.text_widget.after(100, self._try_autocomplete)
+            self.text_widget.after(50, self._try_autocomplete)
+        # Автодополнение при вводе букв, цифр и подчеркивания
+        elif event.char and (event.char.isalnum() or event.char == '_'):
+            # Обновляем автодополнение при вводе символов (оно само закроется, если нет предложений)
+            self.text_widget.after(150, self._try_autocomplete)
         
         return None  # Не блокируем стандартное поведение
     
@@ -300,6 +323,40 @@ class PythonEditor:
         # Очищаем выделения совпадений при клике
         self._clear_match_highlights()
         # Позволяем стандартному поведению работать
+        return None
+    
+    def _on_key_press_up(self, event):
+        """Обработка клавиши Вверх для навигации по автодополнению."""
+        if self.autocomplete_active and self.autocomplete_listbox:
+            self._autocomplete_navigate(event)
+            return "break"
+        return None
+    
+    def _on_key_press_down(self, event):
+        """Обработка клавиши Вниз для навигации по автодополнению."""
+        if self.autocomplete_active and self.autocomplete_listbox:
+            self._autocomplete_navigate(event)
+            return "break"
+        return None
+    
+    def _on_key_press_return(self, event):
+        """Обработка клавиши Enter для вставки автодополнения."""
+        if self.autocomplete_active and self.autocomplete_listbox:
+            self._insert_autocomplete()
+            return "break"
+        return None
+    
+    def _on_key_press(self, event):
+        """Обработка нажатия клавиш для закрытия подсказок."""
+        # Закрываем всплывающие подсказки при нажатии любой клавиши
+        self._close_tooltip()
+        
+        # Escape закрывает автодополнение
+        if event.keysym == "Escape" and self.autocomplete_active:
+            self._close_autocomplete()
+            return "break"
+        
+        # Все остальные клавиши обрабатываются редактором как обычно
         return None
     
     def _on_tab(self, event):
@@ -447,6 +504,7 @@ class PythonEditor:
     def _try_autocomplete(self):
         """Попытка показать автодополнение."""
         if not JEDI_AVAILABLE:
+            print("DEBUG: Jedi недоступен, автодополнение не работает")
             return
         
         try:
@@ -457,17 +515,37 @@ class PythonEditor:
             # Получение кода до курсора
             code = self.text_widget.get("1.0", cursor_pos)
             
+            # Если код пустой или только пробелы, не показываем автодополнение
+            if not code.strip():
+                return
+            
             # Получение предложений от jedi
-            script = jedi.Script(code, line, col)
-            completions = script.completions()
+            # В jedi 0.19+ API изменился: используем Script(code).complete(line, col)
+            script = jedi.Script(code)
+            completions = script.complete(line, col)
             
-            # Фильтруем только полезные предложения
-            filtered_completions = [c for c in completions if not c.name.startswith('_') or c.name.startswith('__')]
+            # Фильтруем предложения:
+            # - Показываем все публичные методы/атрибуты (не начинающиеся с _)
+            # - Или специальные методы (начинающиеся с __)
+            # - Исключаем приватные методы (начинающиеся с _ но не __)
+            filtered_completions = []
+            for c in completions:
+                name = c.name
+                # Показываем публичные методы
+                if not name.startswith('_'):
+                    filtered_completions.append(c)
+                # Показываем специальные методы (__init__, __str__ и т.д.)
+                elif name.startswith('__') and name.endswith('__'):
+                    filtered_completions.append(c)
             
+            # Если есть предложения, показываем их
             if filtered_completions:
                 self._show_autocomplete(filtered_completions, line, col)
-        except Exception:
-            # Игнорируем ошибки автодополнения
+            else:
+                # Если нет предложений, закрываем окно автодополнения
+                self._close_autocomplete()
+        except Exception as e:
+            # Игнорируем ошибки автодополнения (jedi может выдать ошибку на некорректном коде)
             pass
     
     def _show_autocomplete(self, completions: List, line: int, col: int):
@@ -481,20 +559,34 @@ class PythonEditor:
         
         x, y, width, height = bbox
         
+        # Получаем абсолютные координаты виджета
+        widget_x = self.text_widget.winfo_rootx()
+        widget_y = self.text_widget.winfo_rooty()
+        
+        # Вычисляем абсолютную позицию окна автодополнения
+        window_x = widget_x + x
+        window_y = widget_y + y + height
+        
         # Создание окна автодополнения
         self.autocomplete_window = tk.Toplevel(self.text_widget)
         self.autocomplete_window.wm_overrideredirect(True)
-        self.autocomplete_window.wm_geometry(f"+{self.text_widget.winfo_rootx() + x}+{self.text_widget.winfo_rooty() + y + height}")
+        self.autocomplete_window.wm_geometry(f"+{window_x}+{window_y}")
+        
+        # Убеждаемся, что окно поверх других окон
+        self.autocomplete_window.attributes('-topmost', True)
         
         # Создание списка предложений
+        list_height = min(len(completions), 10)
         self.autocomplete_listbox = tk.Listbox(
             self.autocomplete_window,
-            height=min(len(completions), 10),
+            height=list_height,
             font=("Consolas", 10),
             bg="#2d2d2d" if ctk.get_appearance_mode() == "Dark" else "#ffffff",
             fg="#d4d4d4" if ctk.get_appearance_mode() == "Dark" else "#000000",
             selectbackground="#264f78" if ctk.get_appearance_mode() == "Dark" else "#316ac5",
-            selectforeground="#ffffff"
+            selectforeground="#ffffff",
+            relief="solid",
+            borderwidth=1
         )
         self.autocomplete_listbox.pack()
         
@@ -507,12 +599,18 @@ class PythonEditor:
                 display_text = name
             self.autocomplete_listbox.insert(tk.END, display_text)
         
-        # Привязка событий
+        # Привязка событий для мыши (работает даже без фокуса)
         self.autocomplete_listbox.bind("<Double-Button-1>", lambda e: self._insert_autocomplete())
+        self.autocomplete_listbox.bind("<Button-1>", self._on_autocomplete_click)
+        # Привязки для клавиатуры (если фокус случайно переключится на listbox)
         self.autocomplete_listbox.bind("<Return>", lambda e: self._insert_autocomplete())
         self.autocomplete_listbox.bind("<Escape>", lambda e: self._close_autocomplete())
-        self.autocomplete_listbox.bind("<Up>", self._autocomplete_navigate)
-        self.autocomplete_listbox.bind("<Down>", self._autocomplete_navigate)
+        # При навигации стрелками в listbox возвращаем фокус в редактор
+        def handle_nav(e):
+            self.text_widget.focus_set()
+            self._autocomplete_navigate(e)
+        self.autocomplete_listbox.bind("<Up>", handle_nav)
+        self.autocomplete_listbox.bind("<Down>", handle_nav)
         
         # Выбор первого элемента
         if self.autocomplete_listbox.size() > 0:
@@ -520,18 +618,34 @@ class PythonEditor:
             self.autocomplete_listbox.activate(0)
         
         self.autocomplete_active = True
-        self.autocomplete_listbox.focus_set()
+        
+        # Привязываем события навигации БЕЗ add="+" чтобы перехватывать их ПЕРЕД стандартными обработчиками
+        # Это делается только когда автодополнение активно
+        self._nav_bind_ids = [
+            self.text_widget.bind("<Up>", self._on_key_press_up),
+            self.text_widget.bind("<Down>", self._on_key_press_down),
+            self.text_widget.bind("<Return>", self._on_key_press_return),
+        ]
+        
+        # Обновляем окно, чтобы оно точно отобразилось
+        self.autocomplete_window.update_idletasks()
+        
+        # НЕ переключаем фокус на listbox - оставляем фокус в редакторе
+        # Навигация будет обрабатываться через привязки событий в редакторе
+        # Это позволяет продолжать ввод в редактор, даже когда автодополнение активно
     
     def _autocomplete_navigate(self, event):
         """Навигация по списку автодополнения."""
         if not self.autocomplete_listbox:
-            return
+            return "break"
         
         current = self.autocomplete_listbox.curselection()
+        # Если нет выбранного элемента, выбираем первый
         if not current:
-            return
+            current_index = 0
+        else:
+            current_index = current[0]
         
-        current_index = current[0]
         max_index = self.autocomplete_listbox.size() - 1
         
         if event.keysym == "Up":
@@ -539,7 +653,7 @@ class PythonEditor:
         elif event.keysym == "Down":
             new_index = min(max_index, current_index + 1)
         else:
-            return
+            return "break"
         
         self.autocomplete_listbox.selection_clear(0, tk.END)
         self.autocomplete_listbox.selection_set(new_index)
@@ -547,6 +661,16 @@ class PythonEditor:
         self.autocomplete_listbox.see(new_index)
         
         return "break"
+    
+    def _on_autocomplete_click(self, event):
+        """Обработка клика на элемент автодополнения."""
+        # Выбираем элемент под курсором мыши
+        index = self.autocomplete_listbox.nearest(event.y)
+        self.autocomplete_listbox.selection_clear(0, tk.END)
+        self.autocomplete_listbox.selection_set(index)
+        self.autocomplete_listbox.activate(index)
+        # Возвращаем фокус в редактор
+        self.text_widget.focus_set()
     
     def _insert_autocomplete(self, index: Optional[int] = None):
         """Вставка выбранного автодополнения."""
@@ -592,6 +716,8 @@ class PythonEditor:
             self.text_widget.insert(cursor_pos, name)
         
         self._close_autocomplete()
+        # Убеждаемся, что фокус в редакторе
+        self.text_widget.focus_set()
         self._update_syntax_highlighting()
     
     def _close_autocomplete(self, event=None):
@@ -601,6 +727,17 @@ class PythonEditor:
             self.autocomplete_window = None
             self.autocomplete_listbox = None
             self.autocomplete_active = False
+            
+            # Отвязываем события навигации, чтобы они не мешали стандартной работе редактора
+            if hasattr(self, '_nav_bind_ids') and self._nav_bind_ids:
+                for bind_id in self._nav_bind_ids:
+                    try:
+                        self.text_widget.unbind("<Up>", bind_id)
+                        self.text_widget.unbind("<Down>", bind_id)
+                        self.text_widget.unbind("<Return>", bind_id)
+                    except:
+                        pass
+                self._nav_bind_ids = []
         if event:
             return None
     
@@ -669,7 +806,7 @@ class PythonEditor:
             # В tkinter столбцы тоже начинаются с 0, так что все ок
             
             # Получаем информацию о коде в этой позиции
-            script = jedi.Script(code, path=None)
+            script = jedi.Script(code)
             
             # Получаем определения (что находится под курсором)
             definitions = list(script.infer(line, col))
@@ -692,7 +829,7 @@ class PythonEditor:
                     # Если это похоже на функцию или переменную, пробуем найти её
                     if word and (word.isidentifier() or '.' in word):
                         # Пробуем найти определение в коде
-                        script_all = jedi.Script(code, path=None)
+                        script_all = jedi.Script(code)
                         # Ищем все определения этого слова
                         try:
                             # Пробуем найти определение через поиск
