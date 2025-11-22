@@ -1,0 +1,900 @@
+"""Улучшенный компонент редактора Python кода с подсветкой синтаксиса и автодополнением."""
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import scrolledtext
+import re
+from typing import Optional, List, Tuple
+
+try:
+    from idlelib.colorizer import ColorDelegator
+    from idlelib.percolator import Percolator
+    IDLELIB_AVAILABLE = True
+except ImportError:
+    IDLELIB_AVAILABLE = False
+    print("Предупреждение: idlelib недоступен, подсветка синтаксиса будет ограничена")
+
+try:
+    import jedi
+    JEDI_AVAILABLE = True
+except ImportError:
+    JEDI_AVAILABLE = False
+    print("Предупреждение: jedi недоступен, автодополнение будет ограничено")
+
+
+
+class PythonEditor:
+    """Класс для редактирования Python кода с подсветкой синтаксиса и автодополнением."""
+    
+    def __init__(self, parent, initial_code: str = ""):
+        """
+        Инициализация редактора кода.
+
+        Args:
+            parent: Родительский виджет (CTkFrame)
+            initial_code: Начальный код для отображения
+        """
+        self.frame = ctk.CTkFrame(parent)
+        self.frame.pack(fill="both", expand=True)
+
+        # Контейнер для текстового редактора
+        text_container = tk.Frame(self.frame, bg=self._get_bg_color())
+        text_container.pack(fill="both", expand=True)
+
+        # Создание текстового виджета с прокруткой
+        self.text_widget = scrolledtext.ScrolledText(
+            text_container,
+            wrap="none",
+            font=("Consolas", 12),
+            bg="#1e1e1e" if ctk.get_appearance_mode() == "Dark" else "#ffffff",
+            fg="#d4d4d4" if ctk.get_appearance_mode() == "Dark" else "#000000",
+            insertbackground="#ffffff" if ctk.get_appearance_mode() == "Dark" else "#000000",
+            selectbackground="#264f78" if ctk.get_appearance_mode() == "Dark" else "#316ac5",
+            selectforeground="#ffffff",
+            undo=True,
+            maxundo=50
+        )
+        self.text_widget.pack(fill="both", expand=True)
+        
+        # Настройка подсветки синтаксиса
+        if IDLELIB_AVAILABLE:
+            try:
+                self.colorizer = ColorDelegator()
+                self.percolator = Percolator(self.text_widget)
+                self.percolator.insertfilter(self.colorizer)
+                # Настройка тегов для прозрачного фона
+                self._configure_syntax_tags()
+                # Настройка тега для выделения совпадений
+                self._configure_match_highlight_tag()
+            except Exception as e:
+                print(f"Ошибка инициализации подсветки синтаксиса: {e}")
+        
+        # Настройка автодополнения
+        self.autocomplete_active = False
+        self.autocomplete_listbox = None
+        self.autocomplete_window = None
+        
+        # Настройка всплывающих подсказок
+        self.tooltip_active = False
+        self.tooltip_window = None
+        self.tooltip_timer = None
+
+        # Настройка выделения совпадающего текста
+        self.match_highlight_active = False
+
+        # Настройка контекстного меню (как в окне вывода)
+        self._setup_context_menu()
+        
+        # Привязка событий для автодополнения
+        self.text_widget.bind("<KeyRelease>", self._on_key_release)
+        self.text_widget.bind("<Tab>", self._on_tab)
+        self.text_widget.bind("<Escape>", self._close_autocomplete)
+        self.text_widget.bind("<Button-1>", self._on_mouse_click)
+        self.text_widget.bind("<Button-3>", self._show_context_menu)  # Правая кнопка мыши
+        self.text_widget.bind("<Control-space>", lambda e: self._try_autocomplete())
+        
+        # Явная привязка стандартных комбинаций клавиш для копирования/вставки
+        # Используем приоритетные привязки, чтобы гарантировать их работу
+        self.text_widget.bind("<Control-c>", self._copy_text, add="+")
+        self.text_widget.bind("<Control-C>", self._copy_text, add="+")
+        self.text_widget.bind("<Control-v>", self._paste_text, add="+")
+        self.text_widget.bind("<Control-V>", self._paste_text, add="+")
+        self.text_widget.bind("<Control-x>", self._cut_text, add="+")
+        self.text_widget.bind("<Control-X>", self._cut_text, add="+")
+        self.text_widget.bind("<Control-a>", self._select_all, add="+")
+        self.text_widget.bind("<Control-A>", self._select_all, add="+")
+        
+        # Отслеживаем изменения текста для обновления подсветки после вставки
+        self.text_widget.bind("<<Modified>>", self._on_text_modified)
+
+        # Привязка событий для выделения совпадающего текста
+        self.text_widget.bind("<<Selection>>", self._on_selection_changed)
+
+        # Привязка событий для всплывающих подсказок
+        self.text_widget.bind("<Motion>", self._on_mouse_motion)
+        self.text_widget.bind("<Leave>", lambda e: self._close_tooltip())
+        self.text_widget.bind("<KeyPress>", lambda e: self._close_tooltip())
+
+        # Вставка начального кода
+        if initial_code:
+            self.text_widget.insert("1.0", initial_code)
+            self._update_syntax_highlighting()
+    
+    def _get_bg_color(self) -> str:
+        """Получение цвета фона в зависимости от темы."""
+        return "#1e1e1e" if ctk.get_appearance_mode() == "Dark" else "#ffffff"
+    
+    def _configure_syntax_tags(self):
+        """Настройка тегов подсветки синтаксиса с прозрачным фоном."""
+        # Получаем цвет фона виджета
+        bg_color = self.text_widget.cget("bg")
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        
+        # Цвета для темной темы
+        if is_dark:
+            tag_colors = {
+                "KEYWORD": "#569cd6",      # Синий для ключевых слов
+                "BUILTIN": "#4ec9b0",      # Бирюзовый для встроенных функций
+                "STRING": "#ce9178",        # Оранжевый для строк
+                "COMMENT": "#6a9955",      # Зеленый для комментариев
+                "DEFINITION": "#dcdcaa",   # Желтый для определений
+                "CLASSNAME": "#4ec9b0",    # Бирюзовый для имен классов
+            }
+        else:
+            # Цвета для светлой темы (стандартные цвета IDLE)
+            tag_colors = {
+                "KEYWORD": "#ff7700",      # Оранжевый
+                "BUILTIN": "#900090",      # Фиолетовый
+                "STRING": "#00aa00",       # Зеленый
+                "COMMENT": "#dd0000",      # Красный
+                "DEFINITION": "#0000ff",   # Синий
+                "CLASSNAME": "#900090",    # Фиолетовый
+            }
+        
+        # Список тегов, которые использует ColorDelegator
+        syntax_tags = [
+            "KEYWORD", "BUILTIN", "STRING", "COMMENT", "DEFINITION",
+            "SYNC", "TODO", "ERROR", "BREAK", "KEYWORD2", "CLASSNAME"
+        ]
+        
+        # Настраиваем каждый тег с прозрачным фоном и правильным цветом текста
+        for tag in syntax_tags:
+            try:
+                # Получаем цвет для тега (если определен)
+                foreground = tag_colors.get(tag)
+                
+                # Настраиваем тег с фоном, соответствующим фону виджета
+                if foreground:
+                    self.text_widget.tag_configure(tag, background=bg_color, foreground=foreground)
+                else:
+                    self.text_widget.tag_configure(tag, background=bg_color)
+            except tk.TclError:
+                # Тег еще не создан, создадим его с правильным фоном
+                foreground = tag_colors.get(tag)
+                if foreground:
+                    self.text_widget.tag_configure(tag, background=bg_color, foreground=foreground)
+                else:
+                    self.text_widget.tag_configure(tag, background=bg_color)
+
+    def _configure_match_highlight_tag(self):
+        """Настройка тега для выделения совпадающего текста."""
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        if is_dark:
+            # Светло-синий фон для темной темы
+            self.text_widget.tag_configure("match_highlight", background="#3d5a80", foreground="#ffffff")
+        else:
+            # Светло-желтый фон для светлой темы
+            self.text_widget.tag_configure("match_highlight", background="#fef3c7", foreground="#000000")
+
+    def _on_selection_changed(self, event=None):
+        """Обработка изменения выделения текста."""
+        # Очищаем предыдущие выделения совпадений
+        self._clear_match_highlights()
+
+        # Получаем выделенный текст
+        try:
+            selected_text = self.text_widget.get("sel.first", "sel.last")
+        except tk.TclError:
+            # Нет выделенного текста
+            return
+
+        # Если выделенный текст слишком короткий или содержит только пробелы, не выделяем
+        if not selected_text or len(selected_text.strip()) < 2:
+            return
+
+        # Если выделенный текст слишком длинный, не выделяем (чтобы избежать проблем с производительностью)
+        if len(selected_text) > 100:
+            return
+
+        # Находим и выделяем все совпадения
+        self._highlight_matching_text(selected_text)
+
+    def _highlight_matching_text(self, search_text: str):
+        """Выделение всех совпадений заданного текста."""
+        # Получаем весь текст
+        full_text = self.text_widget.get("1.0", "end-1c")
+
+        # Ищем все позиции совпадений (без учета регистра для лучшего UX)
+        search_lower = search_text.lower()
+        start_pos = "1.0"
+
+        while True:
+            # Ищем следующее совпадение
+            start_idx = self.text_widget.search(
+                search_text, start_pos, "end",
+                nocase=True,  # Поиск без учета регистра
+                exact=True    # Точное совпадение
+            )
+
+            if not start_idx:
+                break
+
+            # Вычисляем конечную позицию
+            end_idx = self.text_widget.index(f"{start_idx}+{len(search_text)}c")
+
+            # Проверяем, что это не то же самое выделение, которое уже есть
+            if not self._is_current_selection(start_idx, end_idx):
+                # Выделяем совпадение
+                self.text_widget.tag_add("match_highlight", start_idx, end_idx)
+
+            # Переходим к следующей позиции
+            start_pos = end_idx
+
+    def _is_current_selection(self, start_idx: str, end_idx: str) -> bool:
+        """Проверка, является ли позиция текущим выделением."""
+        try:
+            sel_start = self.text_widget.index("sel.first")
+            sel_end = self.text_widget.index("sel.last")
+            return start_idx == sel_start and end_idx == sel_end
+        except tk.TclError:
+            return False
+
+    def _clear_match_highlights(self):
+        """Очистка всех выделений совпадений."""
+        self.text_widget.tag_remove("match_highlight", "1.0", "end")
+
+    def _update_syntax_highlighting(self):
+        """Обновление подсветки синтаксиса."""
+        if IDLELIB_AVAILABLE and hasattr(self, 'colorizer'):
+            try:
+                # Перезапуск подсветки
+                self.percolator.removefilter(self.colorizer)
+                self.colorizer = ColorDelegator()
+                self.percolator.insertfilter(self.colorizer)
+                # Перенастройка тегов для прозрачного фона
+                self._configure_syntax_tags()
+                # Настройка тега для выделения совпадений
+                self._configure_match_highlight_tag()
+            except Exception:
+                pass
+
+        # Очищаем выделения совпадений при изменении текста
+        self._clear_match_highlights()
+    
+    def _on_key_release(self, event):
+        """Обработка нажатия клавиш для автодополнения."""
+        # ВАЖНО: Не обрабатываем стандартные комбинации клавиш - они обрабатываются отдельно
+        # Проверяем, нажата ли клавиша Control
+        if event.state & 0x4:  # Control нажат
+            # Если это стандартные комбинации (C, V, X, A), полностью игнорируем
+            if event.keysym.lower() in ['c', 'v', 'x', 'a']:
+                return None  # Позволяем стандартным обработчикам работать
+            return None  # Для других комбинаций с Control тоже пропускаем
+        
+        if event.keysym in ['Return', 'Escape', 'Up', 'Down', 'Left', 'Right']:
+            self._close_autocomplete()
+            return None
+        
+        # Автодополнение при вводе точки
+        if event.char == '.':
+            # Небольшая задержка для обработки точки
+            self.text_widget.after(10, self._try_autocomplete)
+        elif event.keysym and len(event.keysym) == 1 and event.char:
+            # Автодополнение при вводе букв/цифр
+            self.text_widget.after(100, self._try_autocomplete)
+        
+        return None  # Не блокируем стандартное поведение
+    
+    def _on_mouse_click(self, event):
+        """Обработка клика мыши."""
+        self._close_autocomplete()
+        # Очищаем выделения совпадений при клике
+        self._clear_match_highlights()
+        # Позволяем стандартному поведению работать
+        return None
+    
+    def _on_tab(self, event):
+        """Обработка Tab для автодополнения."""
+        if self.autocomplete_active and self.autocomplete_listbox:
+            # Выбор первого элемента из списка
+            if self.autocomplete_listbox.size() > 0:
+                self._insert_autocomplete(0)
+                return "break"
+        return None
+    
+    def _copy_text(self, event=None):
+        """Копирование выделенного текста."""
+        try:
+            # Проверяем, есть ли выделенный текст
+            if self.text_widget.tag_ranges("sel"):
+                # Получаем выделенный текст
+                selected_text = self.text_widget.get("sel.first", "sel.last")
+                if selected_text:
+                    # Копируем в буфер обмена напрямую
+                    self.text_widget.clipboard_clear()
+                    self.text_widget.clipboard_append(selected_text)
+            return "break"  # Предотвращаем дальнейшую обработку
+        except Exception as e:
+            print(f"Ошибка копирования: {e}")
+            return None
+    
+    def _cut_text(self, event=None):
+        """Вырезание выделенного текста."""
+        try:
+            if self.text_widget.tag_ranges("sel"):
+                # Получаем выделенный текст
+                selected_text = self.text_widget.get("sel.first", "sel.last")
+                if selected_text:
+                    # Копируем в буфер обмена
+                    self.text_widget.clipboard_clear()
+                    self.text_widget.clipboard_append(selected_text)
+                    # Удаляем выделенный текст
+                    self.text_widget.delete("sel.first", "sel.last")
+                    # Обновляем подсветку после вырезания
+                    self.text_widget.after(10, self._update_syntax_highlighting)
+            return "break"
+        except Exception as e:
+            print(f"Ошибка вырезания: {e}")
+            return None
+    
+    def _paste_text(self, event=None):
+        """Вставка текста из буфера обмена."""
+        try:
+            # Получаем текст из буфера обмена
+            try:
+                clipboard_text = self.text_widget.clipboard_get()
+            except tk.TclError:
+                # Буфер обмена пуст или недоступен
+                return "break"
+            
+            if clipboard_text:
+                # Удаляем выделенный текст, если есть
+                if self.text_widget.tag_ranges("sel"):
+                    self.text_widget.delete("sel.first", "sel.last")
+                
+                # Вставляем текст в позицию курсора
+                self.text_widget.insert("insert", clipboard_text)
+                # Очищаем выделения совпадений
+                self._clear_match_highlights()
+                # Обновляем подсветку после вставки
+                self.text_widget.after(10, self._update_syntax_highlighting)
+            return "break"
+        except Exception as e:
+            print(f"Ошибка вставки: {e}")
+            return None
+    
+    def _select_all(self, event=None):
+        """Выделение всего текста."""
+        try:
+            self.text_widget.tag_add("sel", "1.0", "end-1c")
+            self.text_widget.mark_set("insert", "1.0")
+            self.text_widget.see("insert")
+            return "break"
+        except Exception as e:
+            print(f"Ошибка выделения всего: {e}")
+            return None
+    
+    def _setup_context_menu(self):
+        """Настройка контекстного меню для копирования/вставки (как в окне вывода)."""
+        # Создаем контекстное меню один раз при инициализации
+        self.context_menu = tk.Menu(self.text_widget, tearoff=0)
+        
+        # Добавляем пункты меню
+        self.context_menu.add_command(label="Копировать выделенный текст (Ctrl+C)", command=self._copy_text)
+        self.context_menu.add_command(label="Вырезать выделенный текст (Ctrl+X)", command=self._cut_text)
+        self.context_menu.add_command(label="Вставить (Ctrl+V)", command=self._paste_text)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Выделить всё (Ctrl+A)", command=self._select_all)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Копировать весь код", command=self._copy_all_code)
+    
+    def _copy_all_code(self):
+        """Копирование всего кода из редактора."""
+        try:
+            code = self.get_code()
+            if code:
+                self.text_widget.clipboard_clear()
+                self.text_widget.clipboard_append(code)
+                print(f"Весь код скопирован в буфер обмена ({len(code)} символов)")
+        except Exception as e:
+            print(f"Ошибка копирования всего кода: {e}")
+    
+    def _show_context_menu(self, event):
+        """Показ контекстного меню с опциями копирования/вставки."""
+        try:
+            # Обновляем состояние пунктов меню в зависимости от контекста
+            has_selection = bool(self.text_widget.tag_ranges("sel"))
+            
+            # Обновляем состояние пунктов меню
+            try:
+                # Проверяем, есть ли текст в буфере обмена
+                clipboard_text = self.text_widget.clipboard_get()
+                has_clipboard = bool(clipboard_text)
+            except tk.TclError:
+                has_clipboard = False
+            
+            # Обновляем состояние пунктов меню
+            if has_selection:
+                self.context_menu.entryconfig(0, state="normal")  # Копировать выделенный
+                self.context_menu.entryconfig(1, state="normal")  # Вырезать выделенный
+            else:
+                self.context_menu.entryconfig(0, state="disabled")  # Копировать выделенный
+                self.context_menu.entryconfig(1, state="disabled")  # Вырезать выделенный
+            
+            if has_clipboard:
+                self.context_menu.entryconfig(2, state="normal")  # Вставить
+            else:
+                self.context_menu.entryconfig(2, state="disabled")  # Вставить
+            
+            # Показываем меню
+            try:
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                # Освобождаем меню после использования
+                self.context_menu.grab_release()
+        except Exception as e:
+            print(f"Ошибка показа контекстного меню: {e}")
+    
+    def _try_autocomplete(self):
+        """Попытка показать автодополнение."""
+        if not JEDI_AVAILABLE:
+            return
+        
+        try:
+            # Получение текущей позиции курсора
+            cursor_pos = self.text_widget.index(tk.INSERT)
+            line, col = map(int, cursor_pos.split('.'))
+            
+            # Получение кода до курсора
+            code = self.text_widget.get("1.0", cursor_pos)
+            
+            # Получение предложений от jedi
+            script = jedi.Script(code, line, col)
+            completions = script.completions()
+            
+            # Фильтруем только полезные предложения
+            filtered_completions = [c for c in completions if not c.name.startswith('_') or c.name.startswith('__')]
+            
+            if filtered_completions:
+                self._show_autocomplete(filtered_completions, line, col)
+        except Exception:
+            # Игнорируем ошибки автодополнения
+            pass
+    
+    def _show_autocomplete(self, completions: List, line: int, col: int):
+        """Показ окна автодополнения."""
+        self._close_autocomplete()
+        
+        # Получение позиции курсора в пикселях
+        bbox = self.text_widget.bbox(f"{line}.{col}")
+        if not bbox:
+            return
+        
+        x, y, width, height = bbox
+        
+        # Создание окна автодополнения
+        self.autocomplete_window = tk.Toplevel(self.text_widget)
+        self.autocomplete_window.wm_overrideredirect(True)
+        self.autocomplete_window.wm_geometry(f"+{self.text_widget.winfo_rootx() + x}+{self.text_widget.winfo_rooty() + y + height}")
+        
+        # Создание списка предложений
+        self.autocomplete_listbox = tk.Listbox(
+            self.autocomplete_window,
+            height=min(len(completions), 10),
+            font=("Consolas", 10),
+            bg="#2d2d2d" if ctk.get_appearance_mode() == "Dark" else "#ffffff",
+            fg="#d4d4d4" if ctk.get_appearance_mode() == "Dark" else "#000000",
+            selectbackground="#264f78" if ctk.get_appearance_mode() == "Dark" else "#316ac5",
+            selectforeground="#ffffff"
+        )
+        self.autocomplete_listbox.pack()
+        
+        # Добавление предложений
+        for completion in completions[:20]:  # Ограничиваем до 20 предложений
+            name = completion.name
+            if completion.type:
+                display_text = f"{name} ({completion.type})"
+            else:
+                display_text = name
+            self.autocomplete_listbox.insert(tk.END, display_text)
+        
+        # Привязка событий
+        self.autocomplete_listbox.bind("<Double-Button-1>", lambda e: self._insert_autocomplete())
+        self.autocomplete_listbox.bind("<Return>", lambda e: self._insert_autocomplete())
+        self.autocomplete_listbox.bind("<Escape>", lambda e: self._close_autocomplete())
+        self.autocomplete_listbox.bind("<Up>", self._autocomplete_navigate)
+        self.autocomplete_listbox.bind("<Down>", self._autocomplete_navigate)
+        
+        # Выбор первого элемента
+        if self.autocomplete_listbox.size() > 0:
+            self.autocomplete_listbox.selection_set(0)
+            self.autocomplete_listbox.activate(0)
+        
+        self.autocomplete_active = True
+        self.autocomplete_listbox.focus_set()
+    
+    def _autocomplete_navigate(self, event):
+        """Навигация по списку автодополнения."""
+        if not self.autocomplete_listbox:
+            return
+        
+        current = self.autocomplete_listbox.curselection()
+        if not current:
+            return
+        
+        current_index = current[0]
+        max_index = self.autocomplete_listbox.size() - 1
+        
+        if event.keysym == "Up":
+            new_index = max(0, current_index - 1)
+        elif event.keysym == "Down":
+            new_index = min(max_index, current_index + 1)
+        else:
+            return
+        
+        self.autocomplete_listbox.selection_clear(0, tk.END)
+        self.autocomplete_listbox.selection_set(new_index)
+        self.autocomplete_listbox.activate(new_index)
+        self.autocomplete_listbox.see(new_index)
+        
+        return "break"
+    
+    def _insert_autocomplete(self, index: Optional[int] = None):
+        """Вставка выбранного автодополнения."""
+        if not self.autocomplete_listbox:
+            return
+        
+        if index is None:
+            selection = self.autocomplete_listbox.curselection()
+            if not selection:
+                return
+            index = selection[0]
+        
+        # Получение текста предложения (без типа в скобках)
+        item_text = self.autocomplete_listbox.get(index)
+        # Извлекаем только имя (до скобки если есть)
+        name = item_text.split('(')[0].strip()
+        
+        # Получение текущей позиции курсора
+        cursor_pos = self.text_widget.index(tk.INSERT)
+        line, col = map(int, cursor_pos.split('.'))
+        
+        # Получение текста до курсора для определения что нужно заменить
+        line_text = self.text_widget.get(f"{line}.0", cursor_pos)
+        
+        # Поиск последнего идентификатора или точки
+        # Ищем паттерн: идентификатор.часть_которую_заменяем
+        match = re.search(r'([a-zA-Z_][a-zA-Z0-9_]*\.?)([a-zA-Z_][a-zA-Z0-9_]*)?$', line_text)
+        if match:
+            # Если есть точка, заменяем только часть после точки
+            if '.' in match.group(0):
+                # Находим позицию после последней точки
+                dot_pos = line_text.rfind('.')
+                start_col = col - (col - dot_pos - 1)
+                self.text_widget.delete(f"{line}.{start_col}", cursor_pos)
+                self.text_widget.insert(f"{line}.{start_col}", name)
+            else:
+                # Заменяем весь идентификатор
+                start_col = col - len(match.group(1))
+                self.text_widget.delete(f"{line}.{start_col}", cursor_pos)
+                self.text_widget.insert(f"{line}.{start_col}", name)
+        else:
+            # Просто вставляем имя
+            self.text_widget.insert(cursor_pos, name)
+        
+        self._close_autocomplete()
+        self._update_syntax_highlighting()
+    
+    def _close_autocomplete(self, event=None):
+        """Закрытие окна автодополнения."""
+        if self.autocomplete_window:
+            self.autocomplete_window.destroy()
+            self.autocomplete_window = None
+            self.autocomplete_listbox = None
+            self.autocomplete_active = False
+        if event:
+            return None
+    
+    def get_code(self) -> str:
+        """
+        Получение кода из редактора.
+
+        Returns:
+            Текст кода
+        """
+        return self.text_widget.get("1.0", "end-1c")
+    
+    def set_code(self, code: str):
+        """
+        Установка кода в редактор.
+
+        Args:
+            code: Код для установки
+        """
+        self.text_widget.delete("1.0", "end")
+        self.text_widget.insert("1.0", code)
+        self._update_syntax_highlighting()
+    
+    def clear(self):
+        """Очистка редактора."""
+        self.text_widget.delete("1.0", "end")
+        self._update_syntax_highlighting()
+
+    def _on_mouse_motion(self, event):
+        """Обработка движения мыши для показа всплывающих подсказок."""
+        # Отменяем предыдущий таймер
+        if self.tooltip_timer:
+            self.text_widget.after_cancel(self.tooltip_timer)
+            self.tooltip_timer = None
+        
+        # Закрываем текущую подсказку при движении мыши
+        if self.tooltip_active:
+            self._close_tooltip()
+        
+        # Устанавливаем новый таймер (показываем подсказку через 300мс после остановки мыши)
+        self.tooltip_timer = self.text_widget.after(300, lambda: self._show_tooltip(event))
+    
+    def _show_tooltip(self, event):
+        """Показ всплывающей подсказки."""
+        if not JEDI_AVAILABLE:
+            return
+        
+        # Закрываем предыдущую подсказку если есть
+        if self.tooltip_active:
+            return
+        
+        try:
+            # Получаем позицию курсора в тексте
+            index = self.text_widget.index(f"@{event.x},{event.y}")
+            line_str, col_str = index.split('.')
+            line = int(line_str)
+            col = int(col_str)
+            
+            # Получаем весь код
+            code = self.text_widget.get("1.0", "end-1c")
+            
+            if not code.strip():
+                return
+            
+            # В jedi номера строк начинаются с 1 (как в tkinter), но столбцы с 0
+            # В tkinter столбцы тоже начинаются с 0, так что все ок
+            
+            # Получаем информацию о коде в этой позиции
+            script = jedi.Script(code, path=None)
+            
+            # Получаем определения (что находится под курсором)
+            definitions = list(script.infer(line, col))
+            
+            # Получаем сигнатуры вызовов функций
+            signatures = list(script.get_signatures(line, col))
+            
+            # Если есть определения или сигнатуры, показываем подсказку
+            if definitions or signatures:
+                tooltip_text = self._format_tooltip(definitions, signatures)
+                if tooltip_text and tooltip_text.strip():
+                    self._display_tooltip(tooltip_text, event.x, event.y)
+            else:
+                # Для отладки: получаем слово под курсором
+                try:
+                    word_start = self.text_widget.index(f"{line}.{col} wordstart")
+                    word_end = self.text_widget.index(f"{line}.{col} wordend")
+                    word = self.text_widget.get(word_start, word_end).strip()
+                    
+                    # Если это похоже на функцию или переменную, пробуем найти её
+                    if word and (word.isidentifier() or '.' in word):
+                        # Пробуем найти определение в коде
+                        script_all = jedi.Script(code, path=None)
+                        # Ищем все определения этого слова
+                        try:
+                            # Пробуем найти определение через поиск
+                            goto_definitions = script_all.goto(line, col, follow_imports=True)
+                            if goto_definitions:
+                                defs = list(goto_definitions)
+                                if defs:
+                                    tooltip_text = self._format_tooltip(defs, [])
+                                    if tooltip_text and tooltip_text.strip():
+                                        self._display_tooltip(tooltip_text, event.x, event.y)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+        except Exception as e:
+            # Выводим ошибку для отладки
+            import traceback
+            print(f"Ошибка при показе подсказки: {e}")
+            print(f"Позиция: line={line if 'line' in locals() else 'N/A'}, col={col if 'col' in locals() else 'N/A'}")
+            traceback.print_exc()
+    
+    def _format_tooltip(self, definitions: List, signatures: List) -> str:
+        """Форматирование текста всплывающей подсказки."""
+        parts = []
+        
+        # Добавляем сигнатуры функций
+        if signatures:
+            for sig in signatures[:2]:  # Показываем до 2 сигнатур
+                try:
+                    # Получаем имя функции
+                    name = sig.name if hasattr(sig, 'name') else ''
+                    
+                    # Получаем параметры
+                    params = []
+                    if hasattr(sig, 'params'):
+                        for param in sig.params:
+                            try:
+                                param_str = param.name if hasattr(param, 'name') else str(param)
+                                if hasattr(param, 'description') and param.description:
+                                    param_str += f": {param.description}"
+                                params.append(param_str)
+                            except Exception:
+                                pass
+                    
+                    if name:
+                        if params:
+                            sig_str = f"{name}({', '.join(params)})"
+                        else:
+                            sig_str = f"{name}()"
+                        parts.append(f"📋 {sig_str}")
+                    else:
+                        # Пробуем получить строковое представление
+                        sig_str = str(sig)
+                        if sig_str and sig_str != "None":
+                            parts.append(f"📋 {sig_str}")
+                except Exception as e:
+                    # Пробуем просто строковое представление
+                    try:
+                        sig_str = str(sig)
+                        if sig_str and sig_str != "None":
+                            parts.append(f"📋 {sig_str}")
+                    except Exception:
+                        pass
+        
+        # Добавляем документацию из определений
+        if definitions:
+            for def_item in definitions[:1]:  # Показываем первое определение
+                try:
+                    # Получаем тип и имя
+                    type_name = ''
+                    name = ''
+                    
+                    if hasattr(def_item, 'type'):
+                        type_name = def_item.type
+                    if hasattr(def_item, 'name'):
+                        name = def_item.name
+                    
+                    if name:
+                        header = f"{type_name} {name}" if type_name else name
+                        parts.append(f"🔍 {header}")
+                    
+                    # Получаем документацию
+                    doc = None
+                    if hasattr(def_item, 'docstring'):
+                        try:
+                            doc = def_item.docstring()
+                        except Exception:
+                            pass
+                    
+                    if doc and doc.strip():
+                        # Ограничиваем длину документации
+                        doc_lines = doc.strip().split('\n')[:8]  # Первые 8 строк
+                        doc_short = '\n'.join(doc_lines)
+                        if len(doc.strip()) > len(doc_short):
+                            doc_short += "\n..."
+                        parts.append(f"📖 {doc_short}")
+                except Exception as e:
+                    pass
+        
+        return "\n\n".join(parts) if parts else ""
+    
+    def _display_tooltip(self, text: str, x: int, y: int):
+        """Отображение окна всплывающей подсказки."""
+        self._close_tooltip()
+        
+        if not text.strip():
+            return
+        
+        # Создание окна подсказки
+        self.tooltip_window = tk.Toplevel(self.text_widget)
+        self.tooltip_window.wm_overrideredirect(True)
+        
+        # Получаем абсолютные координаты виджета
+        widget_x = self.text_widget.winfo_rootx()
+        widget_y = self.text_widget.winfo_rooty()
+        
+        # Вычисляем позицию окна (рядом с курсором, но не за краем экрана)
+        tooltip_x = widget_x + x + 20
+        tooltip_y = widget_y + y + 20
+        
+        # Убеждаемся, что окно не выходит за границы экрана
+        screen_width = self.text_widget.winfo_screenwidth()
+        screen_height = self.text_widget.winfo_screenheight()
+        
+        # Предполагаемый размер окна (будет уточнен позже)
+        estimated_width = 400
+        estimated_height = 200
+        
+        if tooltip_x + estimated_width > screen_width:
+            tooltip_x = widget_x + x - estimated_width - 20  # Слева от курсора
+        if tooltip_y + estimated_height > screen_height:
+            tooltip_y = widget_y + y - estimated_height - 20  # Выше курсора
+        
+        self.tooltip_window.wm_geometry(f"+{tooltip_x}+{tooltip_y}")
+        
+        # Настройка цветов в зависимости от темы
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        bg_color = "#2d2d2d" if is_dark else "#ffffff"
+        fg_color = "#d4d4d4" if is_dark else "#000000"
+        border_color = "#555555" if is_dark else "#cccccc"
+        
+        # Фрейм с рамкой
+        frame = tk.Frame(
+            self.tooltip_window,
+            bg=border_color,
+            relief="solid",
+            borderwidth=1
+        )
+        frame.pack(fill="both", expand=True, padx=1, pady=1)
+        
+        # Текстовое поле для подсказки
+        tooltip_text = tk.Text(
+            frame,
+            wrap="word",
+            font=("Consolas", 10),
+            bg=bg_color,
+            fg=fg_color,
+            relief="flat",
+            borderwidth=5,
+            padx=8,
+            pady=8,
+            width=50,
+            height=10
+        )
+        tooltip_text.pack(fill="both", expand=True)
+        
+        # Вставка текста
+        tooltip_text.insert("1.0", text)
+        tooltip_text.config(state="disabled")  # Только для чтения
+        
+        # Автоматическое изменение размера окна
+        tooltip_text.update_idletasks()
+        width = tooltip_text.winfo_reqwidth() + 20
+        height = min(tooltip_text.winfo_reqheight() + 20, 300)
+        self.tooltip_window.geometry(f"{width}x{height}")
+        
+        self.tooltip_active = True
+        
+        # Закрытие при клике
+        self.tooltip_window.bind("<Button-1>", lambda e: self._close_tooltip())
+    
+    def _close_tooltip(self, event=None):
+        """Закрытие всплывающей подсказки."""
+        if self.tooltip_timer:
+            self.text_widget.after_cancel(self.tooltip_timer)
+            self.tooltip_timer = None
+        
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+            self.tooltip_active = False
+
+        if event:
+            return None
+
+    def _on_text_modified(self, event=None):
+        """Обработка изменения текста для обновления подсветки."""
+        if self.text_widget.edit_modified():
+            # Сбрасываем флаг модификации
+            self.text_widget.edit_modified(False)
+            # Обновляем подсветку синтаксиса
+            self._update_syntax_highlighting()
+
+
+
