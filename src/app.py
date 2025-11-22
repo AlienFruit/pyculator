@@ -32,7 +32,7 @@ class PythonCalculatorApp:
             root: Root CustomTkinter window
         """
         self.root = root
-        self.root.title("Python Калькулятор")
+        self.root.title("Pyculator")
         
         # Currently selected file
         self.current_file = None
