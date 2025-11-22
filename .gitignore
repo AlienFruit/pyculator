@@ -13,6 +13,8 @@ venv/
 # Distribution
 dist/
 build/
+src/build/
+src/dist/
 
 # OS specific
 .DS_Store
