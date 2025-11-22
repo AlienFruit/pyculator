@@ -60,10 +60,12 @@ class PythonCalculatorApp:
             on_create=self.handle_create_file,
             on_save=self.handle_save_file,
             on_run=self.handle_run_code,
-            on_select_directory=self.handle_select_directory
+            on_select_directory=self.handle_select_directory,
+            on_delete=self.handle_delete_file
         )
-        # Save button is disabled by default
+        # Save and delete buttons are disabled by default
         self.toolbar.set_save_enabled(False)
+        self.toolbar.set_delete_enabled(False)
         
         # Main container for file panel and work area
         main_container = ctk.CTkFrame(self.root)
@@ -258,9 +260,50 @@ class PythonCalculatorApp:
 
         try:
             self._save_current_file()
-            Toolbar.show_info("Success", f"File saved: {os.path.basename(self.current_file)}")
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to save file: {str(e)}")
+    
+    def handle_delete_file(self):
+        """Handle deleting file."""
+        if not self.current_file:
+            return
+
+        # Get file name for confirmation dialog
+        file_name = os.path.basename(self.current_file)
+
+        # Ask for confirmation
+        if not Toolbar.ask_yes_no(
+            "Delete file",
+            f"Are you sure you want to delete '{file_name}'?\n\nThis action cannot be undone."
+        ):
+            return
+
+        try:
+            # Save current file path before deletion
+            deleted_file_path = self.current_file
+
+            # Delete file
+            if os.path.exists(self.current_file):
+                os.remove(self.current_file)
+
+            # Update file list
+            self.file_panel.refresh_file_list()
+
+            # Clear editor and reset current file
+            self.editor.clear()
+            self.current_file = None
+
+            # Disable save and delete buttons
+            self.toolbar.set_save_enabled(False)
+            self.toolbar.set_delete_enabled(False)
+
+            # Clear last file from app state if it was the deleted file
+            saved_state = self.data_manager.load_app_state()
+            if saved_state.get("last_file") == deleted_file_path:
+                self.data_manager.save_app_state(last_file=None)
+
+        except Exception as e:
+            Toolbar.show_error("Error", f"Failed to delete file: {str(e)}")
     
     def handle_file_select(self, file_path: str):
         """
@@ -283,8 +326,9 @@ class PythonCalculatorApp:
             # Save last opened file in application state
             self.data_manager.save_app_state(last_file=file_path)
 
-            # Enable save button
+            # Enable save and delete buttons
             self.toolbar.set_save_enabled(True)
+            self.toolbar.set_delete_enabled(True)
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to load file: {str(e)}")
     
@@ -336,8 +380,9 @@ class PythonCalculatorApp:
         # Reset current file
         self.current_file = None
 
-        # Disable save button
+        # Disable save and delete buttons
         self.toolbar.set_save_enabled(False)
+        self.toolbar.set_delete_enabled(False)
 
         # Clear editor (nothing is displayed)
         self.editor.clear()

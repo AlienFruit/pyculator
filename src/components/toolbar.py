@@ -11,7 +11,8 @@ class Toolbar:
                  on_create: Optional[Callable] = None,
                  on_save: Optional[Callable] = None,
                  on_run: Optional[Callable] = None,
-                 on_select_directory: Optional[Callable] = None):
+                 on_select_directory: Optional[Callable] = None,
+                 on_delete: Optional[Callable] = None):
         """
         Initialize toolbar.
 
@@ -21,6 +22,7 @@ class Toolbar:
             on_save: Callback for "Save file" button
             on_run: Callback for "Run code" button
             on_select_directory: Callback for "Select directory" button
+            on_delete: Callback for "Delete file" button
         """
         self.frame = ctk.CTkFrame(parent)
         self.frame.pack(fill="x", padx=5, pady=5)
@@ -29,15 +31,23 @@ class Toolbar:
         self.on_save = on_save
         self.on_run = on_run
         self.on_select_directory = on_select_directory
+        self.on_delete = on_delete
+
+        # Button colors - gray theme that adapts to appearance mode
+        # Format: (light_theme_color, dark_theme_color)
+        button_fg_color = ("gray75", "gray25")  # Light gray for light theme, dark gray for dark theme
+        button_hover_color = ("gray65", "gray35")  # Darker on hover
 
         # "Select directory" button
         self.dir_btn = ctk.CTkButton(
             self.frame,
             text="📁",  # Folder icon
             command=self._handle_select_directory,
-            width=50,
+            width=40,
             height=35,
-            font=ctk.CTkFont(size=14)
+            font=ctk.CTkFont(size=14),
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
         )
         self.dir_btn.pack(side="left", padx=2)
 
@@ -46,9 +56,11 @@ class Toolbar:
             self.frame,
             text="📄",  # File creation icon
             command=self._handle_create,
-            width=50,
+            width=40,
             height=35,
-            font=ctk.CTkFont(size=16)
+            font=ctk.CTkFont(size=16),
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
         )
         self.create_btn.pack(side="left", padx=2)
 
@@ -57,21 +69,39 @@ class Toolbar:
             self.frame,
             text="💾",  # Save icon
             command=self._handle_save,
-            width=50,
+            width=40,
             height=35,
             font=ctk.CTkFont(size=16),
-            state="disabled"
+            state="disabled",
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
         )
         self.save_btn.pack(side="left", padx=2)
+
+        # "Delete file" button (disabled by default)
+        self.delete_btn = ctk.CTkButton(
+            self.frame,
+            text="✖",  # Delete icon (cross)
+            command=self._handle_delete,
+            width=40,
+            height=35,
+            font=ctk.CTkFont(size=16),
+            state="disabled",
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
+        )
+        self.delete_btn.pack(side="left", padx=2)
 
         # "Run code" button
         self.run_btn = ctk.CTkButton(
             self.frame,
             text="▶",  # Run icon with spaces for centering
             command=self._handle_run,
-            width=50,
+            width=40,
             height=35,
-            font=ctk.CTkFont(size=14)
+            font=ctk.CTkFont(size=14),
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
         )
         self.run_btn.pack(side="left", padx=2)
 
@@ -95,6 +125,9 @@ class Toolbar:
 
             self.save_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Save file"))
             self.save_btn.bind("<Leave>", self._hide_tooltip)
+
+            self.delete_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Delete file"))
+            self.delete_btn.bind("<Leave>", self._hide_tooltip)
 
             self.run_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Run code"))
             self.run_btn.bind("<Leave>", self._hide_tooltip)
@@ -162,10 +195,27 @@ class Toolbar:
         else:
             self.save_btn.configure(state="disabled")
 
+    def set_delete_enabled(self, enabled: bool):
+        """
+        Control delete button state.
+
+        Args:
+            enabled: True to enable, False to disable
+        """
+        if enabled:
+            self.delete_btn.configure(state="normal")
+        else:
+            self.delete_btn.configure(state="disabled")
+
     def _handle_save(self):
         """Handle file save button."""
         if self.on_save:
             self.on_save()
+
+    def _handle_delete(self):
+        """Handle file delete button."""
+        if self.on_delete:
+            self.on_delete()
 
     def _handle_run(self):
         """Handle code run button."""
@@ -194,6 +244,21 @@ class Toolbar:
     def show_error(title: str, message: str):
         """Show error message."""
         messagebox.showerror(title, message)
+
+    @staticmethod
+    def ask_yes_no(title: str, message: str) -> bool:
+        """
+        Show yes/no confirmation dialog.
+
+        Args:
+            title: Dialog title
+            message: Message text
+
+        Returns:
+            True if user clicked "Yes", False otherwise
+        """
+        result = messagebox.askyesno(title, message)
+        return result
 
     @staticmethod
     def ask_string(title: str, prompt: str, initial_value: str = "") -> Optional[str]:
