@@ -1,7 +1,7 @@
 from imports import *
 
-# Введите ваш Python код здесь
-# Например:
-print('Привет, мир!')
+# Enter your Python code here
+# For example:
+print('Hello, world!')
 result = 2 + 3
-print(f'Результат: {result}')
+print(f'Result: {result}')

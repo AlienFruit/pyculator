@@ -1,46 +1,46 @@
-# Демонстрация Markdown форматирования
-md_text = """# Демонстрация Markdown форматирования
+# Markdown Formatting Demonstration
+md_text = """# Markdown Formatting Demonstration
 
-# Заголовок первого уровня
+# First Level Header
 
-## Заголовок второго уровня
+## Second Level Header
 
-### Заголовок третьего уровня
+### Third Level Header
 
-Это обычный текст с **жирным текстом** и *курсивом*.
+This is regular text with **bold text** and *italics*.
 
-Также можно использовать `инлайн код` в тексте.
+You can also use `inline code` in text.
 
-## Блоки кода
+## Code Blocks
 
 ```python
-# Пример Python кода
+# Python code example
 def hello_world():
-    print("Привет, мир!")
+    print("Hello, world!")
     return True
 ```
 
-## Списки
+## Lists
 
-- Первый элемент списка
-- Второй элемент списка
-- Третий элемент списка
+- First list item
+- Second list item
+- Third list item
 
-1. Нумерованный список
-2. Второй пункт
-3. Третий пункт
+1. Numbered list
+2. Second item
+3. Third item
 
-## Комбинированное форматирование
+## Combined Formatting
 
-Можно использовать **жирный текст** с `кодом` и *курсивом* вместе.
+You can use **bold text** with `code` and *italics* together.
 
 ```
-Блок кода без указания языка
+Code block without language specification
 x = 10
 y = 20
 print(x + y)
 ```
 
-**Важно:** Это демонстрация markdown форматирования в окне вывода!"""
+**Important:** This is a demonstration of markdown formatting in the output window!"""
 
 print(md_text)

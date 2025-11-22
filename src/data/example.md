@@ -1,3 +1,3 @@
-# Пример Markdown файла
+# Example Markdown File
 
-Это файл в формате Markdown для тестирования отображения различных типов файлов.
+This is a Markdown format file for testing the display of various file types.
