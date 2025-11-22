@@ -103,6 +103,8 @@ class PythonEditor:
         
         # ID привязок для навигации (для последующего отвязывания)
         self._nav_bind_ids = []
+        # Имя специального тега для обработчиков автокомплита
+        self._autocomplete_tag = None
         self.text_widget.bind("<Button-1>", self._on_mouse_click)
         self.text_widget.bind("<Button-3>", self._show_context_menu)  # Правая кнопка мыши
         self.text_widget.bind("<Control-space>", lambda e: self._try_autocomplete())
@@ -619,13 +621,27 @@ class PythonEditor:
         
         self.autocomplete_active = True
         
-        # Привязываем события навигации БЕЗ add="+" чтобы перехватывать их ПЕРЕД стандартными обработчиками
-        # Это делается только когда автодополнение активно
-        self._nav_bind_ids = [
-            self.text_widget.bind("<Up>", self._on_key_press_up),
-            self.text_widget.bind("<Down>", self._on_key_press_down),
-            self.text_widget.bind("<Return>", self._on_key_press_return),
-        ]
+        # Используем bindtags для управления порядком обработчиков
+        # Это позволяет нашим обработчикам вызываться первыми, но не блокировать стандартное поведение
+        # когда автокомплит неактивен
+        current_tags = list(self.text_widget.bindtags())
+        # Создаем специальный тег для наших обработчиков автокомплита
+        autocomplete_tag = "AutocompleteHandlers"
+        if autocomplete_tag not in current_tags:
+            # Добавляем наш тег в начало списка, чтобы наши обработчики вызывались первыми
+            current_tags.insert(0, autocomplete_tag)
+            self.text_widget.bindtags(current_tags)
+        
+        # Привязываем события навигации к специальному тегу
+        # Это позволяет нашим обработчикам вызываться первыми
+        self.text_widget.bind_class(autocomplete_tag, "<Up>", self._on_key_press_up)
+        self.text_widget.bind_class(autocomplete_tag, "<Down>", self._on_key_press_down)
+        self.text_widget.bind_class(autocomplete_tag, "<Return>", self._on_key_press_return)
+        
+        # Сохраняем имя тега для последующего удаления
+        self._autocomplete_tag = autocomplete_tag
+        # Для bind_class не нужны ID, поэтому просто отмечаем, что привязки созданы
+        self._nav_bind_ids = [True, True, True]  # Просто флаги, что привязки созданы
         
         # Обновляем окно, чтобы оно точно отобразилось
         self.autocomplete_window.update_idletasks()
@@ -728,16 +744,28 @@ class PythonEditor:
             self.autocomplete_listbox = None
             self.autocomplete_active = False
             
-            # Отвязываем события навигации, чтобы они не мешали стандартной работе редактора
+            # Отвязываем события навигации от специального тега
             if hasattr(self, '_nav_bind_ids') and self._nav_bind_ids:
-                for bind_id in self._nav_bind_ids:
+                if hasattr(self, '_autocomplete_tag'):
                     try:
-                        self.text_widget.unbind("<Up>", bind_id)
-                        self.text_widget.unbind("<Down>", bind_id)
-                        self.text_widget.unbind("<Return>", bind_id)
+                        # Удаляем привязки от класса
+                        self.text_widget.unbind_class(self._autocomplete_tag, "<Up>")
+                        self.text_widget.unbind_class(self._autocomplete_tag, "<Down>")
+                        self.text_widget.unbind_class(self._autocomplete_tag, "<Return>")
                     except:
                         pass
                 self._nav_bind_ids = []
+            
+            # Удаляем специальный тег из bindtags, чтобы восстановить стандартное поведение
+            if hasattr(self, '_autocomplete_tag'):
+                try:
+                    current_tags = list(self.text_widget.bindtags())
+                    if self._autocomplete_tag in current_tags:
+                        current_tags.remove(self._autocomplete_tag)
+                        self.text_widget.bindtags(current_tags)
+                except:
+                    pass
+                self._autocomplete_tag = None
         if event:
             return None
     
