@@ -297,7 +297,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
                 text_before = text[last_end:match.start()]
                 if text_before:
                     parts.append(("normal", text_before))
-            parts.append(("bold", "●" + match.group(1) + "●"))  # Добавляем маркеры
+            parts.append(("bold", match.group(1)))  # Только цветовое выделение
             last_end = match.end()
 
         if last_end < len(text):
@@ -331,7 +331,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
                 text_before = text[last_end:match.start()]
                 if text_before:
                     parts.append(("normal", text_before))
-            parts.append(("italic", "‹" + match.group(1) + "›"))  # Добавляем маркеры
+            parts.append(("italic", match.group(1)))  # Только цветовое выделение
             last_end = match.end()
 
         if last_end < len(text):

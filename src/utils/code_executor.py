@@ -2,6 +2,7 @@
 import io
 import os
 import sys
+import importlib
 from contextlib import redirect_stdout, redirect_stderr
 from typing import Dict, Tuple, Optional, List
 import matplotlib
@@ -75,6 +76,9 @@ class CodeExecutor:
                 # Add working directory to module search path
                 if working_directory not in sys.path:
                     sys.path.insert(0, working_directory)
+                
+                # Reload modules from working directory before execution
+                self._reload_modules_from_directory(working_directory)
 
             # Plots are cleared in app.py before calling execute
 
@@ -135,6 +139,65 @@ class CodeExecutor:
                 pass
 
         return result
+    
+    def _reload_modules_from_directory(self, directory: str) -> None:
+        """
+        Reload all modules that were imported from the specified directory.
+        
+        Args:
+            directory: Directory path to check for modules
+        """
+        if not directory or not os.path.isdir(directory):
+            return
+        
+        # Normalize directory path for comparison
+        directory = os.path.abspath(directory)
+        directory_normalized = directory.lower()
+        
+        # Find and reload modules that were imported from this directory
+        modules_to_reload = []
+        
+        for module_name, module in list(sys.modules.items()):
+            # Skip built-in modules, standard library, and system modules
+            if module_name.startswith('_'):
+                continue
+            
+            try:
+                module_file = getattr(module, '__file__', None)
+                if not module_file:
+                    continue
+                
+                module_path = os.path.abspath(module_file)
+                module_path_normalized = module_path.lower()
+                
+                # Check if module file is in the working directory
+                # Handle both .py files and __pycache__ files
+                if directory_normalized in module_path_normalized:
+                    # For __pycache__ files, get the parent directory
+                    if '__pycache__' in module_path:
+                        module_dir = os.path.dirname(os.path.dirname(module_path))
+                    else:
+                        module_dir = os.path.dirname(module_path)
+                    
+                    # Check if module directory matches working directory
+                    if os.path.abspath(module_dir).lower() == directory_normalized:
+                        # Only reload .py modules (skip .pyc, .pyd, etc.)
+                        if module_path.endswith('.py') or '__pycache__' in module_path:
+                            modules_to_reload.append(module_name)
+                    
+            except (AttributeError, TypeError, OSError):
+                # Skip modules that can't be checked
+                continue
+        
+        # Reload modules
+        for module_name in modules_to_reload:
+            try:
+                if module_name in sys.modules:
+                    importlib.reload(sys.modules[module_name])
+            except (ImportError, AttributeError, TypeError, ValueError):
+                # Some modules can't be reloaded (e.g., C extensions, already deleted)
+                # This is expected and we can ignore it
+                pass
     
     def get_figure(self) -> Optional[plt.Figure]:
         """

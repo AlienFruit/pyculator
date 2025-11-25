@@ -1,7 +1,26 @@
 """Module for managing application data saving and loading."""
 import json
 import os
+import sys
 from typing import Dict, Optional, Tuple
+
+
+def _get_base_path() -> str:
+    """
+    Get base path for application files.
+    In exe mode, returns directory where exe is located.
+    In normal mode, returns project root directory.
+
+    Returns:
+        Base path for application files
+    """
+    if getattr(sys, 'frozen', False):
+        # Running from exe - use directory where exe is located
+        return os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        # Normal mode - use project root directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.dirname(script_dir)
 
 
 def get_data_directory() -> str:
@@ -11,12 +30,9 @@ def get_data_directory() -> str:
     Returns:
         Path to data directory
     """
-    # Get directory where script is located
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Go to project root directory
-    project_root = os.path.dirname(script_dir)
+    base_path = _get_base_path()
     # Create path to data folder
-    data_dir = os.path.join(project_root, "data")
+    data_dir = os.path.join(base_path, "data")
     # Create folder if it doesn't exist
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
@@ -28,14 +44,11 @@ def get_app_state_file() -> str:
     Get path to application state file.
 
     Returns:
-        Path to app_state.json file in project root
+        Path to app_state.json file
     """
-    # Get directory where script is located
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Go to project root directory
-    project_root = os.path.dirname(script_dir)
-    # Return path to app_state.json file in project root
-    return os.path.join(project_root, "app_state.json")
+    base_path = _get_base_path()
+    # Return path to app_state.json file
+    return os.path.join(base_path, "app_state.json")
 
 
 class DataManager:
