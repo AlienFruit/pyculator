@@ -243,12 +243,7 @@ class PythonCalculatorApp:
     def _on_ctrl_n_global(self, event):
         """Обработка нажатия Ctrl+N для создания нового файла (глобальная горячая клавиша)."""
         try:
-            # Сохраняем текущий файл до создания нового
-            previous_file = self.current_file
             self.handle_create_file()
-            # Если файл изменился, значит новый файл был создан
-            if self.current_file != previous_file:
-                Notification.show(self.root, "Создание нового файла...")
             return "break"
         except Exception as e:
             Notification.show(self.root, f"Ошибка создания файла: {str(e)}", duration=4000)
@@ -260,7 +255,6 @@ class PythonCalculatorApp:
         try:
             if self.current_file:
                 self.handle_save_file()
-                Notification.show(self.root, "Файл сохранен")
             return "break"
         except Exception as e:
             Notification.show(self.root, f"Ошибка сохранения файла: {str(e)}", duration=4000)
@@ -311,6 +305,9 @@ class PythonCalculatorApp:
                 # Select created file (this will call handle_file_select, which will save state)
                 self.file_panel._select_file(file_path)
 
+                # Show success notification
+                Notification.show(self.root, f"Файл {file_name}.py создан")
+
             except Exception as e:
                 Toolbar.show_error("Error", f"Failed to create file: {str(e)}")
     
@@ -321,6 +318,7 @@ class PythonCalculatorApp:
 
         try:
             self._save_current_file()
+            Notification.show(self.root, "Файл сохранен")
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to save file: {str(e)}")
     

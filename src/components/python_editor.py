@@ -404,7 +404,6 @@ class PythonEditor:
         try:
             if self.run_code_callback:
                 self.run_code_callback()
-                Notification.show(self.text_widget, "Код выполнен")
             return "break"
         except Exception as e:
             print(f"Ошибка выполнения кода (F5): {e}")
