@@ -106,7 +106,8 @@ class PythonEditor:
         # Привязка событий для автодополнения
         # События для навигации будут привязываться динамически при открытии автодополнения
         # Также привязываем общий KeyPress для закрытия подсказок и других обработок
-        self.text_widget.bind("<KeyPress>", self._on_key_press)
+        # ВАЖНО: используем add="+" чтобы не блокировать стандартные обработчики клавиатуры
+        self.text_widget.bind("<KeyPress>", self._on_key_press, add="+")
         self.text_widget.bind("<KeyRelease>", self._on_key_release)
         self.text_widget.bind("<Tab>", self._on_tab, add="+")
         self.text_widget.bind("<Escape>", self._close_autocomplete, add="+")
@@ -143,6 +144,10 @@ class PythonEditor:
         if initial_code:
             self.text_widget.insert("1.0", initial_code)
             self._update_syntax_highlighting()
+        
+        # Устанавливаем фокус на редактор после полной инициализации
+        # Это критически важно для корректной работы горячих клавиш
+        self.text_widget.after(100, self._ensure_focus)
     
     def _get_bg_color(self) -> str:
         """Получение цвета фона в зависимости от темы."""
@@ -332,8 +337,17 @@ class PythonEditor:
         self._close_autocomplete()
         # Очищаем выделения совпадений при клике
         self._clear_match_highlights()
+        # Явно устанавливаем фокус на редактор для гарантированной работы горячих клавиш
+        self.text_widget.focus_set()
         # Позволяем стандартному поведению работать
         return None
+    
+    def _ensure_focus(self):
+        """Устанавливает фокус на текстовый виджет редактора."""
+        try:
+            self.text_widget.focus_set()
+        except Exception:
+            pass
     
     def _on_key_press_up(self, event):
         """Обработка клавиши Вверх для навигации по автодополнению."""
@@ -783,6 +797,9 @@ class PythonEditor:
                         print(f"Ошибка при закрытии контекста bindtags: {e}")
                 
                 self._autocomplete_tag = None
+                
+                # Восстанавливаем фокус на редакторе для корректной работы горячих клавиш
+                self.text_widget.focus_set()
         except Exception as e:
             print(f"Ошибка при закрытии автодополнения: {e}")
         
