@@ -145,6 +145,10 @@ class PythonEditor:
             self.text_widget.insert("1.0", initial_code)
             self._update_syntax_highlighting()
         
+        # Устанавливаем правильный порядок bind tags сразу после создания виджета
+        # Это критически важно для корректной работы горячих клавиш
+        self._ensure_bindtags_order()
+        
         # Устанавливаем фокус на редактор после полной инициализации
         # Это критически важно для корректной работы горячих клавиш
         self.text_widget.after(100, self._ensure_focus)
@@ -342,9 +346,31 @@ class PythonEditor:
         # Позволяем стандартному поведению работать
         return None
     
-    def _ensure_focus(self):
-        """Устанавливает фокус на текстовый виджет редактора."""
+    def _ensure_bindtags_order(self):
+        """Восстанавливает правильный порядок bind tags для гарантированной работы горячих клавиш."""
         try:
+            # Восстанавливаем правильный порядок bind tags
+            # Стандартный порядок для Text виджета: виджет -> класс -> родитель -> root -> all
+            current_tags = list(self.text_widget.bindtags())
+            
+            # Убеждаемся, что виджет сам находится первым в списке bind tags
+            # Это гарантирует, что привязки виджета обрабатываются первыми
+            widget_str = str(self.text_widget)
+            if current_tags[0] != widget_str:
+                # Удаляем виджет из текущего списка, если он там есть
+                if widget_str in current_tags:
+                    current_tags.remove(widget_str)
+                # Добавляем виджет в начало списка
+                current_tags.insert(0, widget_str)
+                self.text_widget.bindtags(current_tags)
+        except Exception as e:
+            print(f"Ошибка при восстановлении порядка bind tags: {e}")
+    
+    def _ensure_focus(self):
+        """Устанавливает фокус на текстовый виджет редактора и восстанавливает правильный порядок bind tags."""
+        try:
+            # Восстанавливаем правильный порядок bind tags перед установкой фокуса
+            self._ensure_bindtags_order()
             self.text_widget.focus_set()
         except Exception:
             pass
@@ -797,7 +823,9 @@ class PythonEditor:
                 
                 self._autocomplete_tag = None
                 
-                # Восстанавливаем фокус на редакторе для корректной работы горячих клавиш
+                # Восстанавливаем правильный порядок bind tags и фокус на редакторе
+                # Это критически важно для корректной работы горячих клавиш
+                self._ensure_bindtags_order()
                 self.text_widget.focus_set()
         except Exception as e:
             print(f"Ошибка при закрытии автодополнения: {e}")
@@ -824,11 +852,13 @@ class PythonEditor:
         self.text_widget.delete("1.0", "end")
         self.text_widget.insert("1.0", code)
         self._update_syntax_highlighting()
+        self.text_widget.after(10, self._ensure_focus)
     
     def clear(self):
         """Очистка редактора."""
         self.text_widget.delete("1.0", "end")
         self._update_syntax_highlighting()
+        self.text_widget.after(10, self._ensure_focus)
     
     def set_run_code_callback(self, callback):
         """
