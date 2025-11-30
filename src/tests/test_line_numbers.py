@@ -8,7 +8,7 @@ def test_line_numbers():
     """Тестирование номеров строк."""
     # Создание основного окна
     root = ctk.CTk()
-    root.title("Тест номеров строк")
+    root.title("Test номеров строк")
     root.geometry("800x600")
 
     # Создание редактора с номерами строк
@@ -25,10 +25,10 @@ print(f"Result: {result}")"""
 
     editor.set_code(test_code)
 
-    # Кнопка для переключения номеров строк
+    # Button для переключения номеров строк
     def toggle_lines():
         editor.toggle_line_numbers()
-        btn_text = "Показать номера строк" if not editor.line_numbers_visible() else "Скрыть номера строк"
+        btn_text = "Show номера строк" if not editor.line_numbers_visible() else "Скрыть номера строк"
         toggle_btn.configure(text=btn_text)
 
     toggle_btn = ctk.CTkButton(root, text="Скрыть номера строк", command=toggle_lines)

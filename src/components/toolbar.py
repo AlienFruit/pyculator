@@ -147,7 +147,7 @@ class Toolbar:
             self.run_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Run code"))
             self.run_btn.bind("<Leave>", self._hide_tooltip)
 
-            self.help_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Горячие клавиши (F1)"))
+            self.help_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Hotkeys (F1)"))
             self.help_btn.bind("<Leave>", self._hide_tooltip)
 
         except ImportError:

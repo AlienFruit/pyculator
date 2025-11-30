@@ -1,26 +1,26 @@
-"""Контекстный менеджер для управления bindtags в Tkinter."""
+"""Context manager for managing bindtags in Tkinter."""
 import tkinter as tk
 from typing import Optional
 
 
 class BindTagContext:
     """
-    Контекстный менеджер для безопасного управления bindtags.
-    
-    Использование:
+    Context manager for safe bindtags management.
+
+    Usage:
         with BindTagContext(widget, "MyTag"):
             widget.bind_class("MyTag", "<Key>", handler)
-            # Привязки активны
-        # Тег автоматически удален при выходе из контекста
+            # Bindings are active
+        # Tag automatically removed when exiting context
     """
     
     def __init__(self, widget: tk.Widget, tag_name: str):
         """
-        Инициализация контекстного менеджера.
+        Initialize context manager.
 
         Args:
-            widget: Виджет для управления bindtags
-            tag_name: Имя тега для добавления/удаления
+            widget: Widget for bindtags management
+            tag_name: Tag name for adding/removing
         """
         self.widget = widget
         self.tag_name = tag_name
@@ -28,46 +28,46 @@ class BindTagContext:
     
     def __enter__(self):
         """
-        Вход в контекст - добавляем тег если его нет.
-        
+        Enter context - add tag if not present.
+
         Returns:
-            self для использования в with statement
+            self for use in with statement
         """
         try:
             current_tags = list(self.widget.bindtags())
             self._tag_was_present = self.tag_name in current_tags
             
             if not self._tag_was_present:
-                # Добавляем тег в начало списка для приоритета
+                # Add tag to beginning of list for priority
                 current_tags.insert(0, self.tag_name)
                 self.widget.bindtags(current_tags)
         except Exception as e:
-            print(f"Ошибка при добавлении тега {self.tag_name}: {e}")
+            print(f"Error adding tag {self.tag_name}: {e}")
         
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        Выход из контекста - удаляем тег если он был добавлен нами.
-        
+        Exit context - remove tag if it was added by us.
+
         Args:
-            exc_type: Тип исключения (если было)
-            exc_val: Значение исключения
-            exc_tb: Трассировка исключения
-            
+            exc_type: Exception type (if any)
+            exc_val: Exception value
+            exc_tb: Exception traceback
+
         Returns:
-            False - не подавляем исключения
+            False - don't suppress exceptions
         """
         try:
-            # Удаляем тег только если мы его добавили
+            # Remove tag only if we added it
             if not self._tag_was_present:
                 current_tags = list(self.widget.bindtags())
                 if self.tag_name in current_tags:
                     current_tags.remove(self.tag_name)
                     self.widget.bindtags(current_tags)
         except Exception as e:
-            print(f"Ошибка при удалении тега {self.tag_name}: {e}")
-        
-        # Не подавляем исключения
+            print(f"Error removing tag {self.tag_name}: {e}")
+
+        # Don't suppress exceptions
         return False
 

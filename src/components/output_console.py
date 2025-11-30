@@ -1,31 +1,31 @@
-"""Альтернативная реализация вывода - консольный вывод (пример)."""
+"""Alternative output implementation - console output (example)."""
 import customtkinter as ctk
 from typing import Optional
 from components.output_interface import IOutputDisplay
 
 
 class ConsoleOutputDisplay(IOutputDisplay):
-    """Простая консольная реализация вывода (пример альтернативной реализации)."""
+    """Simple console output implementation (example of alternative implementation)."""
     
     def __init__(self, parent):
         """
-        Инициализация компонента вывода.
-        
+        Initialize output component.
+
         Args:
-            parent: Родительский виджет
+            parent: Parent widget
         """
         self.frame = ctk.CTkFrame(parent)
         self.frame.pack(fill="both", expand=True)
         
-        # Заголовок
+        # Title
         label = ctk.CTkLabel(
             self.frame,
-            text="Консольный вывод",
+            text="Console output",
             font=ctk.CTkFont(size=14, weight="bold")
         )
         label.pack(pady=5)
-        
-        # Простой текстовый виджет без markdown поддержки
+
+        # Simple text widget without markdown support
         self.textbox = ctk.CTkTextbox(
             self.frame,
             font=ctk.CTkFont(family="Consolas", size=11),
@@ -33,34 +33,34 @@ class ConsoleOutputDisplay(IOutputDisplay):
             corner_radius=0
         )
         self.textbox.pack(fill="both", expand=True)
-        
-        # Настройка тегов для цветного текста
+
+        # Configure tags for colored text
         self.textbox.tag_config("error", foreground="red")
         self.textbox.tag_config("success", foreground="green")
     
     @property
     def frame(self):
-        """Возвращает основной фрейм компонента для размещения в интерфейсе."""
+        """Returns main component frame for placement in interface."""
         return self._frame
     
     def clear(self):
-        """Очистка вывода."""
+        """Clear output."""
         if self.textbox:
             self.textbox.delete("1.0", "end")
         self.clear_plot()
     
     def clear_plot(self):
-        """Удаление всех графиков."""
-        # Графики очищаются в PlotsDisplay
+        """Remove all plots."""
+        # Plots are cleared in PlotsDisplay
         pass
     
     def append_text(self, text: str, tag: Optional[str] = None):
         """
-        Добавление текста в вывод.
-        
+        Add text to output.
+
         Args:
-            text: Текст для добавления
-            tag: Тег для форматирования (например, "error", "success")
+            text: Text to add
+            tag: Formatting tag (e.g., "error", "success")
         """
         if not self.textbox:
             return
@@ -71,43 +71,43 @@ class ConsoleOutputDisplay(IOutputDisplay):
     
     def append_markdown(self, text: str):
         """
-        Добавление markdown текста в вывод (без форматирования в этой реализации).
-        
+        Add markdown text to output (no formatting in this implementation).
+
         Args:
-            text: Текст с markdown разметкой
+            text: Text with markdown markup
         """
-        # Просто вставляем текст как есть, без парсинга markdown
+        # Just insert text as is, without markdown parsing
         self.append_text(text)
     
     def display_result(self, stdout: str, stderr: str, exception: Optional[str] = None, enable_markdown: bool = True):
         """
-        Отображение результатов выполнения кода.
-        
+        Display code execution results.
+
         Args:
-            stdout: Стандартный вывод
-            stderr: Вывод ошибок
-            exception: Текст исключения если было
-            enable_markdown: Включить поддержку markdown форматирования (игнорируется)
+            stdout: Standard output
+            stderr: Error output
+            exception: Exception text if any
+            enable_markdown: Enable markdown formatting support (ignored)
         """
         self.clear()
         
         has_output = False
         
         if stdout:
-            #self.append_text("Вывод:\n", "success")
+            #self.append_text("Output:\n", "success")
             self.append_text(stdout + "\n")
             has_output = True
-        
+
         if stderr:
-            self.append_text("Ошибки:\n", "error")
+            self.append_text("Errors:\n", "error")
             self.append_text(stderr + "\n", "error")
             has_output = True
-        
+
         if exception:
-            error_msg = f"Ошибка выполнения: {exception}\n"
+            error_msg = f"Execution error: {exception}\n"
             self.append_text(error_msg, "error")
             has_output = True
-        
+
         if not has_output:
-            self.append_text("Код выполнен успешно. Нет вывода.\n", "success")
+            self.append_text("Code executed successfully. No output.\n", "success")
 

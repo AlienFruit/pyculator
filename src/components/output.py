@@ -1,4 +1,4 @@
-"""Компонент для отображения результатов выполнения кода."""
+"""Component для отображения результатов выполнения кода."""
 import customtkinter as ctk
 import tkinter as tk
 import matplotlib.pyplot as plt
@@ -179,7 +179,7 @@ class OutputDisplay(IOutputDisplay):
                 if text_before:
                     parts.append(("text", text_before))
             
-            # Код
+            # Code
             code_text = match.group(1)
             parts.append(("code", code_text))
             last_end = match.end()
@@ -286,7 +286,7 @@ class OutputDisplay(IOutputDisplay):
         
         Args:
             stdout: Стандартный вывод
-            stderr: Вывод ошибок
+            stderr: Output ошибок
             exception: Текст исключения если было
             enable_markdown: Включить поддержку markdown форматирования
         """
@@ -295,7 +295,7 @@ class OutputDisplay(IOutputDisplay):
         has_output = False
         
         if stdout:
-            #self.append_text("Вывод:\n", "success")
+            #self.append_text("Output:\n", "success")
             if enable_markdown:
                 self.append_markdown(stdout)
             else:
@@ -308,12 +308,12 @@ class OutputDisplay(IOutputDisplay):
             has_output = True
         
         if exception:
-            error_msg = f"Ошибка выполнения: {exception}\n"
+            error_msg = f"Error выполнения: {exception}\n"
             self.append_text(error_msg, "error")
             has_output = True
         
         if not has_output:
-            self.append_text("Код выполнен успешно. Нет вывода.\n", "success")
+            self.append_text("Code выполнен успешно. Нет вывода.\n", "success")
     
     # Методы display_plot и display_plots удалены - графики теперь в PlotsDisplay
 

@@ -1,4 +1,4 @@
-"""Компонент для отображения графиков в правой панели."""
+"""Component для отображения графиков в правой панели."""
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -103,7 +103,7 @@ class PlotsDisplay:
                 # Закрываем фигуру matplotlib после уничтожения виджета
                 plt.close(figure)
             except Exception as e:
-                print(f"Ошибка при очистке canvas: {e}")
+                print(f"Error при очистке canvas: {e}")
         self.plot_canvases.clear()
         
         # Очищаем скроллируемый фрейм
@@ -209,7 +209,7 @@ class PlotsDisplay:
             pass
     
     def show(self):
-        """Показать панель графиков."""
+        """Show панель графиков."""
         print(f"DEBUG PlotsDisplay.show: Showing plots panel")
         # Упаковываем родительский контейнер (plots_panel)
         try:
@@ -230,7 +230,7 @@ class PlotsDisplay:
             print(f"DEBUG: Parent was not packed")
     
     def close(self):
-        """Закрыть панель графиков."""
+        """Close панель графиков."""
         # Сначала скрываем панель, потом очищаем графики
         self.hide()
         # Небольшая задержка перед очисткой, чтобы избежать проблем с событиями

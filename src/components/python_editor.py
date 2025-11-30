@@ -78,7 +78,7 @@ class PythonEditor:
                 # Настройка тега для выделения совпадений
                 self._configure_match_highlight_tag()
             except Exception as e:
-                print(f"Ошибка инициализации подсветки синтаксиса: {e}")
+                print(f"Error инициализации подсветки синтаксиса: {e}")
         
         # Настройка автодополнения
         self.autocomplete_active = False
@@ -127,7 +127,7 @@ class PythonEditor:
         bind_case_insensitive(self.text_widget, "<Control-v>", self._paste_text, add="+")
         bind_case_insensitive(self.text_widget, "<Control-x>", self._cut_text, add="+")
         bind_case_insensitive(self.text_widget, "<Control-a>", self._select_all, add="+")
-        # Горячие клавиши Ctrl+N и Ctrl+S теперь регистрируются глобально в app.py
+        # Hotkeys Ctrl+N и Ctrl+S теперь регистрируются глобально в app.py
         
         # Отслеживаем изменения текста для обновления подсветки после вставки
         self.text_widget.bind("<<Modified>>", self._on_text_modified)
@@ -364,7 +364,7 @@ class PythonEditor:
                 current_tags.insert(0, widget_str)
                 self.text_widget.bindtags(current_tags)
         except Exception as e:
-            print(f"Ошибка при восстановлении порядка bind tags: {e}")
+            print(f"Error при восстановлении порядка bind tags: {e}")
     
     def _ensure_focus(self):
         """Устанавливает фокус на текстовый виджет редактора и восстанавливает правильный порядок bind tags."""
@@ -383,7 +383,7 @@ class PythonEditor:
                 return "break"
             return None
         except Exception as e:
-            print(f"Ошибка обработки клавиши Вверх: {e}")
+            print(f"Error обработки клавиши Вверх: {e}")
             return None
     
     def _on_key_press_down(self, event):
@@ -394,7 +394,7 @@ class PythonEditor:
                 return "break"
             return None
         except Exception as e:
-            print(f"Ошибка обработки клавиши Вниз: {e}")
+            print(f"Error обработки клавиши Вниз: {e}")
             return None
     
     def _on_key_press_return(self, event):
@@ -405,7 +405,7 @@ class PythonEditor:
                 return "break"
             return None
         except Exception as e:
-            print(f"Ошибка обработки клавиши Enter: {e}")
+            print(f"Error обработки клавиши Enter: {e}")
             return None
     
     def _on_key_press(self, event):
@@ -422,7 +422,7 @@ class PythonEditor:
             # Все остальные клавиши обрабатываются редактором как обычно
             return None
         except Exception as e:
-            print(f"Ошибка в обработчике нажатия клавиши: {e}")
+            print(f"Error в обработчике нажатия клавиши: {e}")
             return None
     
     def _on_f5(self, event):
@@ -432,7 +432,7 @@ class PythonEditor:
                 self.run_code_callback()
             return "break"
         except Exception as e:
-            print(f"Ошибка выполнения кода (F5): {e}")
+            print(f"Error выполнения кода (F5): {e}")
             return None
     
     def _on_tab(self, event):
@@ -445,7 +445,7 @@ class PythonEditor:
                     return "break"
             return None
         except Exception as e:
-            print(f"Ошибка обработки Tab для автодополнения: {e}")
+            print(f"Error обработки Tab для автодополнения: {e}")
             return None
     
     def _copy_text(self, event=None):
@@ -456,7 +456,7 @@ class PythonEditor:
                 copy_to_clipboard(self.text_widget, selected_text)
             return "break"  # Предотвращаем дальнейшую обработку
         except Exception as e:
-            print(f"Ошибка копирования: {e}")
+            print(f"Error копирования: {e}")
             return None
     
     def _cut_text(self, event=None):
@@ -472,7 +472,7 @@ class PythonEditor:
                 self.text_widget.after(10, self._update_syntax_highlighting)
             return "break"
         except Exception as e:
-            print(f"Ошибка вырезания: {e}")
+            print(f"Error вырезания: {e}")
             return None
     
     def _paste_text(self, event=None):
@@ -492,7 +492,7 @@ class PythonEditor:
                 self.text_widget.after(10, self._update_syntax_highlighting)
             return "break"
         except Exception as e:
-            print(f"Ошибка вставки: {e}")
+            print(f"Error вставки: {e}")
             return None
     
     def _select_all(self, event=None):
@@ -503,7 +503,7 @@ class PythonEditor:
             self.text_widget.see("insert")
             return "break"
         except Exception as e:
-            print(f"Ошибка выделения всего текста (Ctrl+A): {e}")
+            print(f"Error выделения всего текста (Ctrl+A): {e}")
             return None
     
     def _setup_context_menu(self):
@@ -529,7 +529,7 @@ class PythonEditor:
                 self.text_widget.clipboard_append(code)
                 print(f"Весь код скопирован в буфер обмена ({len(code)} символов)")
         except Exception as e:
-            print(f"Ошибка копирования всего кода: {e}")
+            print(f"Error копирования всего кода: {e}")
     
     def _show_context_menu(self, event):
         """Показ контекстного меню с опциями копирования/вставки."""
@@ -565,7 +565,7 @@ class PythonEditor:
                 # Освобождаем меню после использования
                 self.context_menu.grab_release()
         except Exception as e:
-            print(f"Ошибка показа контекстного меню: {e}")
+            print(f"Error показа контекстного меню: {e}")
     
     def _try_autocomplete(self):
         """Попытка показать автодополнение."""
@@ -811,7 +811,7 @@ class PythonEditor:
                         self.text_widget.unbind_class(self._autocomplete_tag, "<Down>")
                         self.text_widget.unbind_class(self._autocomplete_tag, "<Return>")
                     except Exception as e:
-                        print(f"Ошибка при отвязывании событий автодополнения: {e}")
+                        print(f"Error при отвязывании событий автодополнения: {e}")
                 
                 # Закрываем контекстный менеджер для удаления тега
                 if hasattr(self, '_bindtag_context') and self._bindtag_context:
@@ -819,7 +819,7 @@ class PythonEditor:
                         self._bindtag_context.__exit__(None, None, None)
                         self._bindtag_context = None
                     except Exception as e:
-                        print(f"Ошибка при закрытии контекста bindtags: {e}")
+                        print(f"Error при закрытии контекста bindtags: {e}")
                 
                 self._autocomplete_tag = None
                 
@@ -828,7 +828,7 @@ class PythonEditor:
                 self._ensure_bindtags_order()
                 self.text_widget.focus_set()
         except Exception as e:
-            print(f"Ошибка при закрытии автодополнения: {e}")
+            print(f"Error при закрытии автодополнения: {e}")
         
         if event:
             return None
@@ -847,7 +847,7 @@ class PythonEditor:
         Установка кода в редактор.
 
         Args:
-            code: Код для установки
+            code: Code для установки
         """
         self.text_widget.delete("1.0", "end")
         self.text_widget.insert("1.0", code)
@@ -966,7 +966,7 @@ class PythonEditor:
         except Exception as e:
             # Выводим ошибку для отладки
             import traceback
-            print(f"Ошибка при показе подсказки: {e}")
+            print(f"Error при показе подсказки: {e}")
             print(f"Позиция: line={line if 'line' in locals() else 'N/A'}, col={col if 'col' in locals() else 'N/A'}")
             traceback.print_exc()
     

@@ -410,13 +410,13 @@ class DataManager:
     
     def save_hotkeys_config(self, hotkeys: Dict[str, str]) -> bool:
         """
-        Сохранить конфигурацию горячих клавиш.
-        
+        Save hotkeys configuration.
+
         Args:
-            hotkeys: Словарь с настройками горячих клавиш (например, {"run_code": "F5"})
-        
+            hotkeys: Dictionary with hotkeys settings (e.g., {"run_code": "F5"})
+
         Returns:
-            True если сохранение успешно, False иначе
+            True if save successful, False otherwise
         """
         try:
             state_file = get_app_state_file()
@@ -427,15 +427,15 @@ class DataManager:
                 json.dump(current_state, f, ensure_ascii=False, indent=2)
             return True
         except Exception as e:
-            print(f"Ошибка сохранения конфигурации горячих клавиш: {e}")
+            print(f"Error saving hotkeys configuration: {e}")
             return False
     
     def load_hotkeys_config(self) -> Dict[str, str]:
         """
-        Загрузить конфигурацию горячих клавиш.
-        
+        Load hotkeys configuration.
+
         Returns:
-            Словарь с настройками горячих клавиш
+            Dictionary with hotkeys settings
         """
         state = self.load_app_state()
         return state.get("hotkeys", {})

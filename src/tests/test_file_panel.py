@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Тест отображения всех файлов в FilePanel."""
+"""Test отображения всех файлов в FilePanel."""
 
 import customtkinter as ctk
 from components.file_panel import FilePanel
@@ -8,7 +8,7 @@ import os
 def test_file_panel():
     """Тестирование FilePanel с отображением всех файлов."""
     root = ctk.CTk()
-    root.title("Тест FilePanel")
+    root.title("Test FilePanel")
     root.geometry("400x600")
 
     # Создаем FilePanel

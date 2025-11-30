@@ -13,7 +13,7 @@ except ImportError:
 
 
 class PythonEditorCTk:
-    """Редактор кода на базе CTkTextbox с надежной поддержкой копирования/вставки."""
+    """Editor кода на базе CTkTextbox с надежной поддержкой копирования/вставки."""
     
     def __init__(self, parent, initial_code: str = ""):
         """
@@ -197,7 +197,7 @@ class PythonEditorCTk:
                     self.text_widget.clipboard_append(selected_text)
             return "break"
         except Exception as e:
-            print(f"Ошибка копирования: {e}")
+            print(f"Error копирования: {e}")
             return None
     
     def _handle_cut(self, event=None):
@@ -211,7 +211,7 @@ class PythonEditorCTk:
                     self.text_widget.delete("sel.first", "sel.last")
             return "break"
         except Exception as e:
-            print(f"Ошибка вырезания: {e}")
+            print(f"Error вырезания: {e}")
             return None
     
     def _handle_paste(self, event=None):
@@ -228,7 +228,7 @@ class PythonEditorCTk:
         except tk.TclError:
             return "break"
         except Exception as e:
-            print(f"Ошибка вставки: {e}")
+            print(f"Error вставки: {e}")
             return None
     
     def _handle_select_all(self, event=None):
@@ -239,7 +239,7 @@ class PythonEditorCTk:
             self.text_widget.see("insert")
             return "break"
         except Exception as e:
-            print(f"Ошибка выделения всего: {e}")
+            print(f"Error выделения всего: {e}")
             return None
     
     def _show_context_menu(self, event):
@@ -275,7 +275,7 @@ class PythonEditorCTk:
             finally:
                 context_menu.grab_release()
         except Exception as e:
-            print(f"Ошибка показа контекстного меню: {e}")
+            print(f"Error показа контекстного меню: {e}")
     
     def get_code(self) -> str:
         """Получение кода из редактора."""

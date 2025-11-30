@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Тест выделения совпадающего текста."""
+"""Test выделения совпадающего текста."""
 import customtkinter as ctk
 from components.python_editor import PythonEditor
 
 def test_highlight():
     """Тестирование выделения совпадающего текста."""
     root = ctk.CTk()
-    root.title("Тест выделения совпадений")
+    root.title("Test выделения совпадений")
     root.geometry("800x600")
 
     # Создаем редактор

@@ -8,7 +8,7 @@ def test_markdown_output():
     """Тестирование MarkdownOutputDisplay."""
     # Создаем главное окно
     root = ctk.CTk()
-    root.title("Тест MarkdownOutputDisplay")
+    root.title("Test MarkdownOutputDisplay")
     root.geometry("800x600")
 
     # Создаем экземпляр MarkdownOutputDisplay
@@ -16,7 +16,7 @@ def test_markdown_output():
 
     # Тестируем различные типы контента
 
-    # 1. Простой текст
+    # 1. Simple текст
     output_display.append_text("=== Тестирование MarkdownOutputDisplay ===\n\n", "success")
 
     # 2. Текст с ошибками
@@ -70,7 +70,7 @@ def hello_world():
     test_stdout = """
 # Результат выполнения кода
 
-Код выполнен успешно!
+Code выполнен успешно!
 
 ```
 Результат вычисления: 42

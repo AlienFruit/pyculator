@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Простой тест для проверки MarkdownOutputDisplay без GUI."""
+"""Simple тест для проверки MarkdownOutputDisplay без GUI."""
 
 import sys
 import os
@@ -11,12 +11,12 @@ import markdown
 def test_markdown_conversion():
     """Тестирование конвертации markdown в HTML."""
     test_md = """
-# Тест заголовка
+# Test заголовка
 
 Это **жирный** и *курсивный* текст.
 
 ```
-Код на Python
+Code на Python
 print("Hello")
 ```
 """
@@ -34,11 +34,11 @@ def test_import():
         print("✓ Импорт прошел успешно")
         return True
     except ImportError as e:
-        print(f"✗ Ошибка импорта: {e}")
+        print(f"✗ Error импорта: {e}")
         return False
 
 def test_interface_compliance():
-    """Проверка соответствия интерфейсу."""
+    """Check соответствия интерфейсу."""
     try:
         # Проверяем, что MarkdownOutputDisplay наследует от IOutputDisplay
         from components.output_interface import IOutputDisplay
@@ -55,7 +55,7 @@ def test_interface_compliance():
         print("✓ MarkdownOutputDisplay соответствует интерфейсу IOutputDisplay")
         return True
     except Exception as e:
-        print(f"✗ Ошибка проверки интерфейса: {e}")
+        print(f"✗ Error проверки интерфейса: {e}")
         return False
 
 if __name__ == "__main__":

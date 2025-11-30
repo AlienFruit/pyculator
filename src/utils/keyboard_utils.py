@@ -1,37 +1,37 @@
-"""Утилиты для работы с клавиатурой и буфером обмена."""
+"""Utilities for keyboard and clipboard operations."""
 import tkinter as tk
 from typing import Optional, Callable
 
 
 def copy_to_clipboard(widget: tk.Widget, text: str) -> bool:
     """
-    Универсальная функция копирования текста в буфер обмена.
+    Universal function for copying text to clipboard.
 
     Args:
-        widget: Виджет для доступа к буферу обмена
-        text: Текст для копирования
+        widget: Widget for clipboard access
+        text: Text to copy
 
     Returns:
-        True если успешно, False в случае ошибки
+        True if successful, False on error
     """
     try:
         widget.clipboard_clear()
         widget.clipboard_append(text)
         return True
     except Exception as e:
-        print(f"Ошибка копирования в буфер обмена: {e}")
+        print(f"Error copying to clipboard: {e}")
         return False
 
 
 def get_selected_text(widget: tk.Text) -> Optional[str]:
     """
-    Получение выделенного текста из виджета.
+    Get selected text from widget.
 
     Args:
-        widget: Текстовый виджет
+        widget: Text widget
 
     Returns:
-        Выделенный текст или None если нет выделения
+        Selected text or None if no selection
     """
     try:
         if widget.tag_ranges("sel"):
@@ -43,13 +43,13 @@ def get_selected_text(widget: tk.Text) -> Optional[str]:
 
 def has_selection(widget: tk.Text) -> bool:
     """
-    Проверка наличия выделенного текста.
+    Check for selected text presence.
 
     Args:
-        widget: Текстовый виджет
+        widget: Text widget
 
     Returns:
-        True если есть выделение, False иначе
+        True if selection exists, False otherwise
     """
     try:
         return bool(widget.tag_ranges("sel"))
@@ -59,13 +59,13 @@ def has_selection(widget: tk.Text) -> bool:
 
 def get_clipboard_text(widget: tk.Widget) -> Optional[str]:
     """
-    Получение текста из буфера обмена.
+    Get text from clipboard.
 
     Args:
-        widget: Виджет для доступа к буферу обмена
+        widget: Widget for clipboard access
 
     Returns:
-        Текст из буфера обмена или None если буфер пуст или недоступен
+        Text from clipboard or None if clipboard is empty or unavailable
     """
     try:
         return widget.clipboard_get()
@@ -75,30 +75,30 @@ def get_clipboard_text(widget: tk.Widget) -> Optional[str]:
 
 def bind_case_insensitive(widget: tk.Widget, key_combination: str, handler: Callable, add: str = "") -> None:
     """
-    Привязка обработчика с учетом обоих регистров клавиши.
+    Bind handler considering both key cases.
 
     Args:
-        widget: Виджет для привязки
-        key_combination: Комбинация клавиш (например, "<Control-c>")
-        handler: Обработчик события
-        add: Флаг добавления ("+" для добавления без перезаписи)
+        widget: Widget for binding
+        key_combination: Key combination (e.g., "<Control-c>")
+        handler: Event handler
+        add: Add flag ("+" for adding without overwriting)
     """
-    # Извлекаем модификаторы и клавишу
+    # Extract modifiers and key
     if key_combination.startswith("<") and key_combination.endswith(">"):
-        # Разделяем на модификаторы и клавишу
+        # Split into modifiers and key
         parts = key_combination[1:-1].split("-")
         if len(parts) > 1:
             modifiers = "-".join(parts[:-1])
             key = parts[-1]
-            # Привязываем оба варианта регистра
+            # Bind both case variants
             widget.bind(f"<{modifiers}-{key.lower()}>", handler, add=add)
             widget.bind(f"<{modifiers}-{key.upper()}>", handler, add=add)
         else:
-            # Нет модификаторов, просто клавиша
+            # No modifiers, just key
             key = parts[0]
             widget.bind(f"<{key.lower()}>", handler, add=add)
             widget.bind(f"<{key.upper()}>", handler, add=add)
     else:
-        # Нестандартный формат, привязываем как есть
+        # Non-standard format, bind as is
         widget.bind(key_combination, handler, add=add)
 

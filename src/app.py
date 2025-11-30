@@ -7,7 +7,7 @@ import os
 # 2. PythonEditorCTk - editor based on CTkTextbox (reliable copy/paste, no syntax highlighting)
 # 3. PythonEditorSimple - simplified editor without complex handlers (maximum reliability)
 from components.python_editor import PythonEditor
-# Альтернативы:
+# Alternatives:
 # from components.python_editor_ctk import PythonEditorCTk as PythonEditor
 # from components.python_editor_simple import PythonEditorSimple as PythonEditor
 from components.output import OutputDisplay  # Old implementation (with manual parsing)
@@ -120,7 +120,7 @@ class PythonCalculatorApp:
         # Code editor (top panel)
         editor_container = ctk.CTkFrame(self.splitter)
         self.editor = PythonEditor(editor_container)
-        # Устанавливаем callbacks для горячих клавиш
+        # Set callbacks for hotkeys
         self.editor.set_run_code_callback(self.handle_run_code)
         self.editor.set_file_action_callbacks(
             create_callback=self.handle_create_file,
@@ -154,26 +154,26 @@ class PythonCalculatorApp:
         # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
         
-        # F1 для справки по горячим клавишам
+        # F1 for hotkeys help
         self.hotkey_manager.register(
             '<F1>',
             lambda e: self.show_hotkeys_help(),
             component='PythonCalculatorApp',
-            description='Показать справку по горячим клавишам'
+            description='Show hotkeys help'
         )
         
-        # Глобальные горячие клавиши для работы с файлами
+        # Global hotkeys for file operations
         self.hotkey_manager.register_case_insensitive(
             '<Control-n>',
             self._on_ctrl_n_global,
             component='PythonCalculatorApp',
-            description='Создать новый файл'
+            description='Create new file'
         )
         self.hotkey_manager.register_case_insensitive(
             '<Control-s>',
             self._on_ctrl_s_global,
             component='PythonCalculatorApp',
-            description='Сохранить файл'
+            description='Save file'
         )
 
         # Plots panel (right side) - hidden by default
@@ -241,24 +241,24 @@ class PythonCalculatorApp:
         pass
     
     def _on_ctrl_n_global(self, event):
-        """Обработка нажатия Ctrl+N для создания нового файла (глобальная горячая клавиша)."""
+        """Handle Ctrl+N press for creating new file (global hotkey)."""
         try:
             self.handle_create_file()
             return "break"
         except Exception as e:
-            Notification.show(self.root, f"Ошибка создания файла: {str(e)}", duration=4000)
-            print(f"Ошибка создания файла (Ctrl+N): {e}")
+            Notification.show(self.root, f"Error creating file: {str(e)}", duration=4000)
+            print(f"Error creating file (Ctrl+N): {e}")
             return "break"
     
     def _on_ctrl_s_global(self, event):
-        """Обработка нажатия Ctrl+S для сохранения файла (глобальная горячая клавиша)."""
+        """Handle Ctrl+S press for saving file (global hotkey)."""
         try:
             if self.current_file:
                 self.handle_save_file()
             return "break"
         except Exception as e:
-            Notification.show(self.root, f"Ошибка сохранения файла: {str(e)}", duration=4000)
-            print(f"Ошибка сохранения файла (Ctrl+S): {e}")
+            Notification.show(self.root, f"Error saving file: {str(e)}", duration=4000)
+            print(f"Error saving file (Ctrl+S): {e}")
             return "break"
     
     def handle_create_file(self):
@@ -306,7 +306,7 @@ class PythonCalculatorApp:
                 self.file_panel._select_file(file_path)
 
                 # Show success notification
-                Notification.show(self.root, f"Файл {file_name}.py создан")
+                Notification.show(self.root, f"File {file_name}.py created")
 
             except Exception as e:
                 Toolbar.show_error("Error", f"Failed to create file: {str(e)}")
@@ -318,7 +318,7 @@ class PythonCalculatorApp:
 
         try:
             self._save_current_file()
-            Notification.show(self.root, "Файл сохранен")
+            Notification.show(self.root, "File saved")
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to save file: {str(e)}")
     
@@ -362,7 +362,7 @@ class PythonCalculatorApp:
                 self.data_manager.save_app_state(last_file=None)
 
             # Show success notification
-            Notification.show(self.root, "Файл удален")
+            Notification.show(self.root, "File deleted")
 
         except Exception as e:
             Toolbar.show_error("Error", f"Failed to delete file: {str(e)}")
@@ -607,11 +607,11 @@ class PythonCalculatorApp:
             print(f"Error updating splitter color: {e}")
     
     def show_hotkeys_help(self):
-        """Показать диалог справки по горячим клавишам."""
+        """Show hotkeys help dialog."""
         try:
             HotkeysHelpDialog(self.root, self.hotkey_manager)
         except Exception as e:
-            print(f"Ошибка показа справки по горячим клавишам: {e}")
+            print(f"Error showing hotkeys help: {e}")
             import traceback
             traceback.print_exc()
 

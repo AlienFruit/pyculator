@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Тест сохранения и загрузки данных."""
+"""Test сохранения и загрузки данных."""
 from utils.data_manager import DataManager
 
 def test_save_load():

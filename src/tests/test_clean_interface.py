@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Тест чистого интерфейса без заголовков."""
+"""Test чистого интерфейса без заголовков."""
 
 import customtkinter as ctk
 from components.toolbar import Toolbar
@@ -10,7 +10,7 @@ from components.output_markdown import MarkdownOutputDisplay
 def test_clean_interface():
     """Тестирование чистого интерфейса без заголовков."""
     root = ctk.CTk()
-    root.title("Тест чистого интерфейса")
+    root.title("Test чистого интерфейса")
     root.geometry("900x600")
 
     # Создаем тулбар
@@ -32,7 +32,7 @@ def test_clean_interface():
     editor_container.pack(fill="both", expand=True, padx=5, pady=(5, 2.5))
     editor = PythonEditor(editor_container)
 
-    # Вывод результатов
+    # Output результатов
     output_container = ctk.CTkFrame(work_area)
     output_container.pack(fill="both", expand=True, padx=5, pady=(2.5, 5))
     output = MarkdownOutputDisplay(output_container)
@@ -40,13 +40,13 @@ def test_clean_interface():
     # Добавляем информацию
     info = ctk.CTkLabel(
         root,
-        text="Чистый интерфейс без заголовков:\n\n• Панель файлов - без заголовка 'Файлы'\n• Редактор кода - без заголовка 'Редактор Python кода'\n• Вывод результатов - без заголовка 'Результаты выполнения'\n\nИнтерфейс стал более минималистичным!",
+        text="Clean интерфейс без заголовков:\n\n• Панель файлов - без заголовка 'Файлы'\n• Редактор кода - без заголовка 'Редактор Python кода'\n• Output результатов - без заголовка 'Результаты выполнения'\n\nИнтерфейс стал более минималистичным!",
         font=ctk.CTkFont(size=11),
         justify="left"
     )
     info.pack(pady=10)
 
-    print("Тест чистого интерфейса запущен!")
+    print("Test чистого интерфейса запущен!")
     print("Все заголовки убраны для более чистого вида.")
 
     root.mainloop()

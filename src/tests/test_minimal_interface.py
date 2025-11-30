@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Тест полностью минималистичного интерфейса."""
+"""Test полностью минималистичного интерфейса."""
 
 import customtkinter as ctk
 from components.toolbar import Toolbar
@@ -10,7 +10,7 @@ from components.output_markdown import MarkdownOutputDisplay
 def test_minimal_interface():
     """Тестирование минималистичного интерфейса без заголовков и кнопок."""
     root = ctk.CTk()
-    root.title("Тест минималистичного интерфейса")
+    root.title("Test минималистичного интерфейса")
     root.geometry("900x600")
 
     # Создаем тулбар
@@ -32,7 +32,7 @@ def test_minimal_interface():
     editor_container.pack(fill="both", expand=True, padx=5, pady=(5, 2.5))
     editor = PythonEditor(editor_container)
 
-    # Вывод результатов (теперь без кнопки копирования)
+    # Output результатов (теперь без кнопки копирования)
     output_container = ctk.CTkFrame(work_area)
     output_container.pack(fill="both", expand=True, padx=5, pady=(2.5, 5))
     output = MarkdownOutputDisplay(output_container)
@@ -44,7 +44,7 @@ def test_minimal_interface():
 Это **жирный текст** и *курсивный текст* для демонстрации markdown.
 
 ```python
-print("Код выполняется корректно!")
+print("Code выполняется корректно!")
 ```
 
 ## Преимущества:
@@ -64,8 +64,8 @@ print("Код выполняется корректно!")
     )
     info.pack(pady=10)
 
-    print("Тест минималистичного интерфейса запущен!")
-    print("Интерфейс стал максимально чистым и функциональным.")
+    print("Test минималистичного интерфейса запущен!")
+    print("Interface стал максимально чистым и функциональным.")
 
     root.mainloop()
 

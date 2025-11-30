@@ -50,7 +50,7 @@ class IOutputDisplay(ABC):
         
         Args:
             stdout: Стандартный вывод
-            stderr: Вывод ошибок
+            stderr: Output ошибок
             exception: Текст исключения если было
             enable_markdown: Включить поддержку markdown форматирования
         """

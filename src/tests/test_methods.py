@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Тест методов DataManager."""
+"""Test методов DataManager."""
 from utils.data_manager import DataManager
 
 def test_methods():
     """Тестирование методов."""
     dm = DataManager()
 
-    print("Тест load_data_from_file...")
+    print("Test load_data_from_file...")
     result = dm.load_data_from_file('data/test.py')
     print(f"Загружено из test.py: {len(result['code'])} символов")
 

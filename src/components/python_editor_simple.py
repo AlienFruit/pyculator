@@ -99,7 +99,7 @@ class PythonEditorSimple:
                 # Освобождаем меню после использования
                 context_menu.grab_release()
         except Exception as e:
-            print(f"Ошибка показа контекстного меню: {e}")
+            print(f"Error показа контекстного меню: {e}")
     
     def _copy_text(self):
         """Копирование выделенного текста."""
@@ -110,7 +110,7 @@ class PythonEditorSimple:
                     self.text_widget.clipboard_clear()
                     self.text_widget.clipboard_append(selected_text)
         except Exception as e:
-            print(f"Ошибка копирования: {e}")
+            print(f"Error копирования: {e}")
     
     def _cut_text(self):
         """Вырезание выделенного текста."""
@@ -122,7 +122,7 @@ class PythonEditorSimple:
                     self.text_widget.clipboard_append(selected_text)
                     self.text_widget.delete("sel.first", "sel.last")
         except Exception as e:
-            print(f"Ошибка вырезания: {e}")
+            print(f"Error вырезания: {e}")
     
     def _paste_text(self):
         """Вставка текста из буфера обмена."""
@@ -137,7 +137,7 @@ class PythonEditorSimple:
         except tk.TclError:
             pass
         except Exception as e:
-            print(f"Ошибка вставки: {e}")
+            print(f"Error вставки: {e}")
     
     def _select_all(self):
         """Выделение всего текста."""
@@ -146,7 +146,7 @@ class PythonEditorSimple:
             self.text_widget.mark_set("insert", "1.0")
             self.text_widget.see("insert")
         except Exception as e:
-            print(f"Ошибка выделения всего: {e}")
+            print(f"Error выделения всего: {e}")
     
     def get_code(self) -> str:
         """Получение кода из редактора."""

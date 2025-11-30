@@ -137,7 +137,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
                 # Нет выделенного текста, копируем весь
                 self._copy_all_text()
         except Exception as e:
-            print(f"Ошибка копирования выделенного текста: {e}")
+            print(f"Error копирования выделенного текста: {e}")
             # В случае ошибки пробуем скопировать весь текст
             try:
                 self._copy_all_text()
@@ -150,7 +150,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
             self.textbox.tag_add("sel", "1.0", "end")
             return "break"  # Предотвращаем стандартное поведение
         except Exception as e:
-            print(f"Ошибка выделения всего текста (Ctrl+A): {e}")
+            print(f"Error выделения всего текста (Ctrl+A): {e}")
             return None
 
     def _copy_all_text(self):
@@ -164,10 +164,10 @@ class MarkdownOutputDisplay(IOutputDisplay):
                 # Показываем уведомление в консоли
                 print(f"Текст скопирован в буфер обмена ({len(text_content)} символов)")
             else:
-                print("Ошибка: не удалось скопировать текст в буфер обмена")
+                print("Error: не удалось скопировать текст в буфер обмена")
 
         except Exception as e:
-            print(f"Ошибка копирования текста: {e}")
+            print(f"Error копирования текста: {e}")
 
 
     def _parse_markdown(self, text: str):
@@ -209,7 +209,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
                     i += 1
                 if code_lines:
                     # Добавляем рамку вокруг блока кода
-                    self.textbox.insert("end", "┌─ Код ─────────────────────────────────\n", "md_code")
+                    self.textbox.insert("end", "┌─ Code ─────────────────────────────────\n", "md_code")
                     code_text = '\n'.join(code_lines) + '\n'
                     self.textbox.insert("end", code_text, "md_codeblock")
                     self.textbox.insert("end", "└───────────────────────────────────────\n", "md_code")
@@ -259,7 +259,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
                 if text_before:
                     parts.append(("text", text_before))
 
-            # Код
+            # Code
             code_text = match.group(1)
             parts.append(("code", code_text))
             last_end = match.end()
@@ -399,7 +399,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
 
         Args:
             stdout: Стандартный вывод
-            stderr: Вывод ошибок
+            stderr: Output ошибок
             exception: Текст исключения если было
             enable_markdown: Включить поддержку markdown форматирования
         """
@@ -408,7 +408,7 @@ class MarkdownOutputDisplay(IOutputDisplay):
         has_output = False
 
         if stdout:
-            #self.append_text("Вывод:\n", "success")
+            #self.append_text("Output:\n", "success")
             if enable_markdown:
                 self.append_markdown(stdout)
             else:
@@ -421,10 +421,10 @@ class MarkdownOutputDisplay(IOutputDisplay):
             has_output = True
 
         if exception:
-            error_msg = f"Ошибка выполнения: {exception}\n"
+            error_msg = f"Error выполнения: {exception}\n"
             self.append_text(error_msg, "error")
             has_output = True
 
         if not has_output:
-            self.append_text("Код выполнен успешно. Нет вывода.\n", "success")
+            self.append_text("Code выполнен успешно. Нет вывода.\n", "success")
 

@@ -14,7 +14,7 @@ def main():
     root = ctk.CTk()
     
     # Set window icon (ICO format)
-    # Определяем путь к иконке с учётом PyInstaller
+    # Determine icon path considering PyInstaller
     if getattr(sys, 'frozen', False):
         # Если приложение собрано PyInstaller, используем временную папку
         base_path = sys._MEIPASS
@@ -28,7 +28,7 @@ def main():
             # Для ICO используем iconbitmap() - это стандартный метод для Windows
             root.iconbitmap(icon_path)
         except Exception as e:
-            print(f"Не удалось установить иконку: {e}")
+            print(f"Failed to set icon: {e}")
     
     app = PythonCalculatorApp(root)
     

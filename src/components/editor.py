@@ -1,4 +1,4 @@
-"""Компонент редактора Python кода."""
+"""Component редактора Python кода."""
 import customtkinter as ctk
 
 
@@ -42,7 +42,7 @@ class CodeEditor:
         Установка кода в редактор.
         
         Args:
-            code: Код для установки
+            code: Code для установки
         """
         self.textbox.delete("1.0", "end")
         self.textbox.insert("1.0", code)
