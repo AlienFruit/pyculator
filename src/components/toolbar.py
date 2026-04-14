@@ -13,6 +13,7 @@ class Toolbar:
                  on_run: Optional[Callable] = None,
                  on_select_directory: Optional[Callable] = None,
                  on_delete: Optional[Callable] = None,
+                 on_create_folder: Optional[Callable] = None,
                  on_help: Optional[Callable] = None):
         """
         Initialize toolbar.
@@ -24,15 +25,17 @@ class Toolbar:
             on_run: Callback for "Run code" button
             on_select_directory: Callback for "Select directory" button
             on_delete: Callback for "Delete file" button
+            on_create_folder: Callback for "Create folder" button
         """
         self.frame = ctk.CTkFrame(parent)
         self.frame.pack(fill="x", padx=5, pady=5)
-        
+
         self.on_create = on_create
         self.on_save = on_save
         self.on_run = on_run
         self.on_select_directory = on_select_directory
         self.on_delete = on_delete
+        self.on_create_folder = on_create_folder
         self.on_help = on_help
 
         # Button colors - gray theme that adapts to appearance mode
@@ -43,7 +46,7 @@ class Toolbar:
         # "Select directory" button
         self.dir_btn = ctk.CTkButton(
             self.frame,
-            text="📁",  # Folder icon
+            text="📂",  # Open folder icon
             command=self._handle_select_directory,
             width=40,
             height=35,
@@ -65,6 +68,19 @@ class Toolbar:
             hover_color=button_hover_color
         )
         self.create_btn.pack(side="left", padx=2)
+
+        # "Create folder" button
+        self.create_folder_btn = ctk.CTkButton(
+            self.frame,
+            text="📁",  # Closed folder icon
+            command=self._handle_create_folder,
+            width=40,
+            height=35,
+            font=ctk.CTkFont(size=16),
+            fg_color=button_fg_color,
+            hover_color=button_hover_color
+        )
+        self.create_folder_btn.pack(side="left", padx=2)
 
         # "Save file" button (disabled by default)
         self.save_btn = ctk.CTkButton(
@@ -138,6 +154,9 @@ class Toolbar:
             self.create_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Create new file"))
             self.create_btn.bind("<Leave>", self._hide_tooltip)
 
+            self.create_folder_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Create new folder"))
+            self.create_folder_btn.bind("<Leave>", self._hide_tooltip)
+
             self.save_btn.bind("<Enter>", lambda e: self._show_tooltip(e, "Save file"))
             self.save_btn.bind("<Leave>", self._hide_tooltip)
 
@@ -200,6 +219,11 @@ class Toolbar:
         """Handle file creation button."""
         if self.on_create:
             self.on_create()
+
+    def _handle_create_folder(self):
+        """Handle folder creation button."""
+        if self.on_create_folder:
+            self.on_create_folder()
 
     def set_save_enabled(self, enabled: bool):
         """

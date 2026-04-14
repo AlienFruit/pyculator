@@ -66,6 +66,7 @@ class PythonCalculatorApp:
             on_run=self.handle_run_code,
             on_select_directory=self.handle_select_directory,
             on_delete=self.handle_delete_file,
+            on_create_folder=self.handle_create_folder,
             on_help=self.show_hotkeys_help
         )
         # Save and delete buttons are disabled by default
@@ -90,6 +91,7 @@ class PythonCalculatorApp:
             main_container,
             on_file_select=self.handle_file_select,
             on_directory_change=self.handle_directory_change,
+            on_delete=self.handle_delete_file,
             initial_directory=initial_directory
         )
         # Set directory in data_manager
@@ -149,7 +151,7 @@ class PythonCalculatorApp:
         # Position is saved only on button release to prevent artifacts
 
         # Add theme change listener to update splitter colors
-        ctk.AppearanceModeTracker.add(self._update_splitter_colors)
+        ctk.AppearanceModeTracker.add(self._on_theme_change)
 
         # Bind window appearance handler for final position loading
         self.root.bind('<Map>', self._on_window_mapped)
@@ -269,7 +271,7 @@ class PythonCalculatorApp:
             "Enter file name (without .py extension):",
             ""
         )
-        
+
         if file_name:
             # Remove extension if user specified it
             if file_name.endswith('.py'):
@@ -279,9 +281,17 @@ class PythonCalculatorApp:
                 Toolbar.show_error("Error", "File name cannot be empty")
                 return
 
-            # Form full path (use current directory from file_panel)
+            # Determine target directory: use selected folder if it's a folder, otherwise use current directory
             current_dir = self.file_panel.get_current_directory()
-            file_path = os.path.join(current_dir, f"{file_name}.py")
+            selected_path = self.file_panel.get_selected_path()
+            
+            # If a folder is selected in the tree, use it as target directory
+            if selected_path and os.path.isdir(selected_path):
+                target_dir = selected_path
+            else:
+                target_dir = current_dir
+            
+            file_path = os.path.join(target_dir, f"{file_name}.py")
 
             # Check if file already exists
             if os.path.exists(file_path):
@@ -299,18 +309,72 @@ class PythonCalculatorApp:
                 )
                 self.data_manager.save_data_to_file(file_path, default_code)
 
-                # Update file list
+                # Update file tree
                 self.file_panel.refresh_file_list()
-
-                # Select created file (this will call handle_file_select, which will save state)
-                self.file_panel._select_file(file_path)
+                
+                # Expand parent folder and select the file if it was created in a subfolder
+                if target_dir != self.file_panel.get_current_directory():
+                    self.file_panel._expand_to_directory(target_dir)
+                    # Small delay to let tree populate before selecting
+                    self.root.after(100, lambda: self.file_panel._select_file(file_path))
+                else:
+                    # Select created file immediately
+                    self.file_panel._select_file(file_path)
 
                 # Show success notification
                 Notification.show(self.root, f"File {file_name}.py created")
 
             except Exception as e:
                 Toolbar.show_error("Error", f"Failed to create file: {str(e)}")
-    
+
+    def handle_create_folder(self):
+        """Handle creating a new folder."""
+        # Request folder name
+        folder_name = Toolbar.ask_string(
+            "Create folder",
+            "Enter folder name:",
+            ""
+        )
+
+        if folder_name:
+            if not folder_name.strip():
+                Toolbar.show_error("Error", "Folder name cannot be empty")
+                return
+
+            # Determine target directory: use selected folder if it's a folder, otherwise use current directory
+            current_dir = self.file_panel.get_current_directory()
+            selected_path = self.file_panel.get_selected_path()
+            
+            # If a folder is selected in the tree, use it as target directory
+            if selected_path and os.path.isdir(selected_path):
+                target_dir = selected_path
+            else:
+                target_dir = current_dir
+            
+            folder_path = os.path.join(target_dir, folder_name)
+
+            # Check if folder already exists
+            if os.path.exists(folder_path):
+                Toolbar.show_error("Error", f"Folder '{folder_name}' already exists")
+                return
+
+            try:
+                # Create new folder
+                os.makedirs(folder_path, exist_ok=True)
+
+                # Update file tree
+                self.file_panel.refresh_file_list()
+                
+                # Expand parent folder if folder was created in a subfolder
+                if target_dir != self.file_panel.get_current_directory():
+                    self.file_panel._expand_to_directory(target_dir)
+
+                # Show success notification
+                Notification.show(self.root, f"Folder '{folder_name}' created")
+
+            except Exception as e:
+                Toolbar.show_error("Error", f"Failed to create folder: {str(e)}")
+
     def handle_save_file(self):
         """Handle saving file."""
         if not self.current_file:
@@ -323,49 +387,56 @@ class PythonCalculatorApp:
             Toolbar.show_error("Error", f"Failed to save file: {str(e)}")
     
     def handle_delete_file(self):
-        """Handle deleting file."""
-        if not self.current_file:
+        """Handle deleting file or folder."""
+        selected_path = self.file_panel.get_selected_path()
+        if not selected_path:
             return
 
-        # Get file name for confirmation dialog
-        file_name = os.path.basename(self.current_file)
+        # Get name for confirmation dialog
+        name = os.path.basename(selected_path)
+        is_dir = os.path.isdir(selected_path)
 
         # Ask for confirmation
+        action = "folder" if is_dir else "file"
         if not Toolbar.ask_yes_no(
-            "Delete file",
-            f"Are you sure you want to delete '{file_name}'?\n\nThis action cannot be undone."
+            f"Delete {action}",
+            f"Are you sure you want to delete '{name}'?\n\nThis action cannot be undone."
         ):
             return
 
         try:
-            # Save current file path before deletion
-            deleted_file_path = self.current_file
+            # Save current selection before deletion
+            deleted_path = selected_path
 
-            # Delete file
-            if os.path.exists(self.current_file):
-                os.remove(self.current_file)
+            # Delete file or folder
+            if is_dir:
+                import shutil
+                shutil.rmtree(selected_path)
+            elif os.path.isfile(selected_path):
+                os.remove(selected_path)
 
-            # Update file list
+            # Update file tree
             self.file_panel.refresh_file_list()
 
-            # Clear editor and reset current file
-            self.editor.clear()
-            self.current_file = None
+            # Clear editor if deleted file was open
+            if self.current_file and (self.current_file == deleted_path or self.current_file.startswith(deleted_path + os.sep)):
+                self.editor.clear()
+                self.current_file = None
 
-            # Disable save and delete buttons
-            self.toolbar.set_save_enabled(False)
-            self.toolbar.set_delete_enabled(False)
+                # Disable save and delete buttons
+                self.toolbar.set_save_enabled(False)
+                self.toolbar.set_delete_enabled(False)
 
-            # Clear last file from app state if it was the deleted file
-            saved_state = self.data_manager.load_app_state()
-            if saved_state.get("last_file") == deleted_file_path:
-                self.data_manager.save_app_state(last_file=None)
+                # Clear last file from app state if needed
+                saved_state = self.data_manager.load_app_state()
+                if saved_state.get("last_file") and (saved_state.get("last_file") == deleted_path or saved_state.get("last_file").startswith(deleted_path + os.sep)):
+                    self.data_manager.save_app_state(last_file=None)
 
             # Show success notification
-            Notification.show(self.root, "File deleted")
+            Notification.show(self.root, f"{action.capitalize()} deleted")
 
         except Exception as e:
-            Toolbar.show_error("Error", f"Failed to delete file: {str(e)}")
+            Toolbar.show_error("Error", f"Failed to delete {action}: {str(e)}")
     
     def handle_file_select(self, file_path: str):
         """
@@ -595,6 +666,11 @@ class PythonCalculatorApp:
                     self.data_manager.save_splitter_position(position)
         except Exception as e:
             print(f"Error saving splitter position: {e}")
+
+    def _on_theme_change(self):
+        """Handle theme change - update all theme-dependent colors."""
+        self._update_splitter_colors()
+        self.file_panel.update_theme_colors()
 
     def _update_splitter_colors(self):
         """Update splitter background color when theme changes."""
